@@ -2,3 +2,6 @@ node_modules/
 .wrangler/
 .dev.vars*
 .impeccable/
+
+__pycache__/
+*.pyc

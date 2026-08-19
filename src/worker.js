@@ -1,36 +1,33 @@
-import { getSchedule, putSchedule } from './kv.js';
 import {
   issueToken, requireAuth, isRateLimited, recordFailedAuth, clearFailedAuth,
 } from './auth.js';
 import { callAzureOpenAI, buildTools } from './openai.js';
 import {
-  findRows, sortRows, groupByCount, planReassign, applyReassign, planSwap, applySwap,
-} from './schedule-ops.js';
+  getSchedule, distinctDays, isReadOnlySelect, runReadOnly,
+  planReassign, planSwap, applyPending,
+} from './db.js';
 
-const SYSTEM_PROMPT = 'You are the scheduling assistant for a staff event schedule. '
-  + 'Always use query_schedule for factual questions -- it computes exact filters, sorts, and '
-  + 'counts; do not try to eyeball or count matches yourself. '
-  + 'To propose a change, call reassign_station or swap_people -- you never apply changes '
-  + 'yourself, a human confirms them separately. Keep replies brief.';
+const EVENT_ID = 'ibc-2026';
+
+function systemPrompt(days) {
+  return 'You are the scheduling assistant for a staff event. Answer questions and propose changes concisely.\n\n'
+    + 'For any factual or analytical question, call run_sql with ONE read-only SQLite SELECT. '
+    + 'Do all filtering/counting/sorting/grouping in SQL -- never count or rank yourself.\n\n'
+    + 'Table: shifts(id, event_id, staff_name, day, date, start_time, end_time, station, is_floater, group_name)\n'
+    + `- ALWAYS include: WHERE event_id = '${EVENT_ID}'\n`
+    + `- day is one of: ${days.join(', ')}\n`
+    + '- start_time/end_time are \'HH:MM\' 24h strings and compare correctly as text\n'
+    + '- is_floater: 1 = backup/floater, 0 = primary\n'
+    + '- station is the demo/role (e.g. "Premiere Pro", "Info Counter"); use LIKE for partial matches\n\n'
+    + 'To change the schedule, call reassign_station or swap_people -- you never write directly, a human confirms.\n'
+    + 'Keep replies to 1-2 sentences; the data table is shown separately.';
+}
+
+const INLINE_LIMIT = 5;
+const MAX_TABLE_ROWS = 30;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-}
-
-// The client only stores `message` (not the table) as this turn's history
-// for future follow-ups -- for small result sets, spell out the actual
-// facts in the message itself so "and Saturday?" has something concrete
-// to ground on, instead of a generic "Found 1 match." that carries no
-// information forward.
-const INLINE_SUMMARY_LIMIT = 5;
-
-function summarizeRows(rows) {
-  if (rows.length > INLINE_SUMMARY_LIMIT) {
-    return `Found ${rows.length} matches.`;
-  }
-  return rows
-    .map((r) => `${r.staff_name}: ${r.station}, ${r.day} ${r.start_time}–${r.end_time}`)
-    .join('; ');
 }
 
 async function handleGetSchedule(eventId, env) {
@@ -40,7 +37,6 @@ async function handleGetSchedule(eventId, env) {
 async function handleAuth(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   if (await isRateLimited(env, ip)) return json({ error: 'Too many attempts' }, 429);
-
   const { passphrase } = await request.json();
   if (passphrase !== env.ADMIN_PASSPHRASE) {
     await recordFailedAuth(env, ip);
@@ -50,23 +46,39 @@ async function handleAuth(request, env) {
   return json({ token: await issueToken(env) });
 }
 
+// Turn a result-set into a compact table + a short factual message. The
+// message spells out small results so chat follow-ups have real facts to
+// ground on, not a bare "Found N".
+function resultResponse(rows) {
+  if (!rows.length) return json({ message: 'No matching rows.' });
+  const headers = Object.keys(rows[0]);
+  const capped = rows.slice(0, MAX_TABLE_ROWS);
+  let message;
+  if (rows.length <= INLINE_LIMIT) {
+    message = capped.map((r) => headers.map((h) => `${r[h]}`).join(' · ')).join('; ');
+  } else {
+    message = `${rows.length} result${rows.length === 1 ? '' : 's'}${rows.length > MAX_TABLE_ROWS ? ` (showing ${MAX_TABLE_ROWS})` : ''}.`;
+  }
+  return json({
+    message,
+    table: { headers, rows: capped.map((r) => headers.map((h) => `${r[h]}`)) },
+  });
+}
+
 async function handleChat(request, env) {
   if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
 
   const { messages, eventId } = await request.json();
   if (!Array.isArray(messages) || !messages.length) return json({ error: 'Missing messages' }, 400);
-
-  // Force role to user/assistant only -- a client can't smuggle in its own
-  // "system" message to override SYSTEM_PROMPT.
   const history = messages
     .filter((m) => typeof m?.content === 'string' && m.content)
     .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
 
   const schedule = await getSchedule(env, eventId);
-  const days = [...new Set(schedule.map((r) => r.day))];
+  const days = distinctDays(schedule);
 
   const completion = await callAzureOpenAI(env, [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: systemPrompt(days) },
     ...history,
   ], buildTools(days));
 
@@ -78,66 +90,37 @@ async function handleChat(request, env) {
   const args = JSON.parse(toolCall.function.arguments || '{}');
   const { name } = toolCall.function;
 
-  if (name === 'query_schedule') {
-    let rows = findRows(schedule, args);
-
-    if (args.group_by) {
-      let groups = groupByCount(rows, args.group_by, args.order);
-      if (args.limit) groups = groups.slice(0, args.limit);
-      if (!groups.length) return json({ message: 'No matching schedule rows found.' });
-      const groupMessage = groups.length > INLINE_SUMMARY_LIMIT
-        ? `${groups.length} groups.`
-        : groups.map((g) => `${g.key}: ${g.count}`).join('; ');
-      return json({
-        message: groupMessage,
-        table: {
-          headers: ['Name', 'Shift count'],
-          rows: groups.map((g) => [g.key, String(g.count)]),
-        },
-      });
+  if (name === 'run_sql') {
+    if (!isReadOnlySelect(args.sql || '')) {
+      return json({ message: 'That query was blocked — only read-only SELECTs are allowed.' });
     }
-
-    if (args.sort_by) rows = sortRows(rows, args.sort_by, args.order);
-
-    if (args.count_only) {
-      return json({ message: `${rows.length} matching row${rows.length === 1 ? '' : 's'}.` });
+    try {
+      const rows = await runReadOnly(env, args.sql);
+      return resultResponse(rows);
+    } catch (e) {
+      return json({ message: `Query error: ${e.message}` });
     }
-
-    if (args.limit) rows = rows.slice(0, args.limit);
-    if (!rows.length) return json({ message: 'No matching schedule rows found.' });
-
-    return json({
-      message: summarizeRows(rows),
-      table: {
-        headers: ['Name', 'Day', 'Station', 'Time'],
-        rows: rows.map((r) => [r.staff_name, r.day, r.station, `${r.start_time}–${r.end_time}`]),
-      },
-    });
   }
 
   if (name === 'reassign_station') {
-    const plan = planReassign(schedule, args);
-    if (!plan) return json({ message: `Couldn't find ${args.staff_name} on ${args.day}.` });
-    if (plan.ambiguous) {
-      return json({ message: `"${args.staff_name}" matches multiple people (${plan.ambiguous.join(', ')}) -- use a full name.` });
-    }
+    const plan = await planReassign(env, eventId, args);
+    if (plan.error) return json({ message: `Couldn't find ${args.staff_name} on ${args.day}.` });
+    if (plan.ambiguous) return json({ message: `"${args.staff_name}" matches multiple people (${plan.ambiguous.join(', ')}) — use a full name.` });
     return json({
       message: `Proposed: move ${args.staff_name} to ${args.new_station} on ${args.day}. Confirm to apply.`,
       table: plan.table,
-      pendingAction: { type: 'reassign_station', args },
+      pendingAction: plan.pending,
     });
   }
 
   if (name === 'swap_people') {
-    const plan = planSwap(schedule, args);
-    if (!plan) return json({ message: 'Could not find one or both people on that day.' });
-    if (plan.ambiguous) {
-      return json({ message: `That name matches multiple people (${plan.ambiguous.join(', ')}) -- use a full name.` });
-    }
+    const plan = await planSwap(env, eventId, args);
+    if (plan.error) return json({ message: 'Could not find one or both people on that day.' });
+    if (plan.ambiguous) return json({ message: `That name matches multiple people (${plan.ambiguous.join(', ')}) — use a full name.` });
     return json({
       message: `Proposed: swap ${args.staff_name_a} and ${args.staff_name_b} on ${args.day}. Confirm to apply.`,
       table: plan.table,
-      pendingAction: { type: 'swap_people', args },
+      pendingAction: plan.pending,
     });
   }
 
@@ -146,41 +129,24 @@ async function handleChat(request, env) {
 
 async function handleConfirm(request, env) {
   if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
+  const { pendingAction } = await request.json();
+  if (!pendingAction?.type) return json({ error: 'Missing action' }, 400);
 
-  const { eventId, pendingAction } = await request.json();
-  const schedule = await getSchedule(env, eventId);
-
-  let updates = 0;
-  if (pendingAction?.type === 'reassign_station') {
-    updates = applyReassign(schedule, pendingAction.args);
-  } else if (pendingAction?.type === 'swap_people') {
-    updates = applySwap(schedule, pendingAction.args);
-  } else {
-    return json({ error: 'Unknown or missing action' }, 400);
-  }
-
-  if (!updates) return json({ error: 'Those rows no longer match -- schedule may have changed since this was proposed.' }, 409);
-
-  await putSchedule(env, eventId, schedule);
-  return json({ message: `Applied -- ${updates} row(s) updated.`, updates });
+  const result = await applyPending(env, pendingAction);
+  if (result.drift) return json({ error: 'Those rows changed since this was proposed — re-run the request.' }, 409);
+  if (result.error) return json({ error: 'Unknown action' }, 400);
+  return json({ message: `Applied — ${result.updates} row(s) updated.`, updates: result.updates });
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
     if (url.pathname.startsWith('/api/schedule/') && request.method === 'GET') {
       return handleGetSchedule(url.pathname.split('/').pop(), env);
     }
-    if (url.pathname === '/api/admin/auth' && request.method === 'POST') {
-      return handleAuth(request, env);
-    }
-    if (url.pathname === '/api/admin/chat' && request.method === 'POST') {
-      return handleChat(request, env);
-    }
-    if (url.pathname === '/api/admin/confirm' && request.method === 'POST') {
-      return handleConfirm(request, env);
-    }
+    if (url.pathname === '/api/admin/auth' && request.method === 'POST') return handleAuth(request, env);
+    if (url.pathname === '/api/admin/chat' && request.method === 'POST') return handleChat(request, env);
+    if (url.pathname === '/api/admin/confirm' && request.method === 'POST') return handleConfirm(request, env);
     return new Response('Not found', { status: 404 });
   },
 };
