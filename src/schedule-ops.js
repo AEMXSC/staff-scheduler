@@ -1,7 +1,17 @@
-export function findRows(schedule, { staff_name, day, station } = {}) {
+export function findRows(schedule, {
+  staff_name, day, station, is_floater,
+} = {}) {
   return schedule.filter((r) => (!staff_name || r.staff_name.toLowerCase() === staff_name.toLowerCase())
     && (!day || r.day.toLowerCase() === day.toLowerCase())
-    && (!station || r.station.toLowerCase().includes(station.toLowerCase())));
+    && (!station || r.station.toLowerCase().includes(station.toLowerCase()))
+    && (is_floater === undefined || r.is_floater === is_floater));
+}
+
+// "HH:MM" (24h, zero-padded) sorts correctly as a plain string -- no need
+// to parse to minutes first.
+export function sortRows(rows, sortBy, order) {
+  const sorted = [...rows].sort((a, b) => a[sortBy].localeCompare(b[sortBy]));
+  return order === 'desc' ? sorted.reverse() : sorted;
 }
 
 export function diffTable(rows, newStationFor) {

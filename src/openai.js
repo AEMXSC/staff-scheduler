@@ -5,13 +5,20 @@ export const TOOLS = [
     type: 'function',
     function: {
       name: 'query_schedule',
-      description: "Look up who's assigned to a station, day, or person in the staff schedule. Read-only.",
+      description: "Query the staff schedule -- read-only. Always use this for factual questions "
+        + "(who/when/which station, 'first'/'last'/earliest/latest, counts, floaters) instead of "
+        + 'guessing or counting yourself; the tool computes exact answers, you should not.',
       parameters: {
         type: 'object',
         properties: {
-          staff_name: { type: 'string' },
+          staff_name: { type: 'string', description: 'Filter by staff name (partial match)' },
           day: { type: 'string' },
-          station: { type: 'string' },
+          station: { type: 'string', description: 'Filter by station (partial match)' },
+          is_floater: { type: 'boolean', description: 'true = only floater/backup rows, false = only primary rows, omit = both' },
+          sort_by: { type: 'string', enum: ['start_time', 'end_time'], description: "Set this to find the 'first'/earliest or 'last'/latest shift" },
+          order: { type: 'string', enum: ['asc', 'desc'], description: "'asc' for earliest/first (default), 'desc' for latest/last" },
+          limit: { type: 'integer', description: "Cap the number of rows returned after sorting -- e.g. 1 for 'who is first'" },
+          count_only: { type: 'boolean', description: "If true, return just the count of matching rows -- use for 'how many' questions" },
         },
       },
     },

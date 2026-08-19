@@ -4,13 +4,14 @@ import {
 } from './auth.js';
 import { callAzureOpenAI } from './openai.js';
 import {
-  findRows, planReassign, applyReassign, planSwap, applySwap,
+  findRows, sortRows, planReassign, applyReassign, planSwap, applySwap,
 } from './schedule-ops.js';
 
 const SYSTEM_PROMPT = 'You are the scheduling assistant for a staff event schedule. '
-  + 'Use query_schedule to look things up. Use reassign_station or swap_people to propose '
-  + 'a change -- you never apply changes yourself, a human confirms them separately. '
-  + 'Keep replies brief.';
+  + 'Always use query_schedule for factual questions -- it computes exact filters, sorts, and '
+  + 'counts; do not try to eyeball or count matches yourself. '
+  + 'To propose a change, call reassign_station or swap_people -- you never apply changes '
+  + 'yourself, a human confirms them separately. Keep replies brief.';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
@@ -61,8 +62,16 @@ async function handleChat(request, env) {
   const { name } = toolCall.function;
 
   if (name === 'query_schedule') {
-    const rows = findRows(schedule, args);
+    let rows = findRows(schedule, args);
+    if (args.sort_by) rows = sortRows(rows, args.sort_by, args.order);
+
+    if (args.count_only) {
+      return json({ message: `${rows.length} matching row${rows.length === 1 ? '' : 's'}.` });
+    }
+
+    if (args.limit) rows = rows.slice(0, args.limit);
     if (!rows.length) return json({ message: 'No matching schedule rows found.' });
+
     return json({
       message: `Found ${rows.length} match${rows.length > 1 ? 'es' : ''}.`,
       table: {
