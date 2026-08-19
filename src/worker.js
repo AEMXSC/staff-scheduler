@@ -2,7 +2,7 @@ import { getSchedule, putSchedule } from './kv.js';
 import {
   issueToken, requireAuth, isRateLimited, recordFailedAuth, clearFailedAuth,
 } from './auth.js';
-import { callAzureOpenAI } from './openai.js';
+import { callAzureOpenAI, buildTools } from './openai.js';
 import {
   findRows, sortRows, groupByCount, planReassign, applyReassign, planSwap, applySwap,
 } from './schedule-ops.js';
@@ -63,11 +63,12 @@ async function handleChat(request, env) {
     .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
 
   const schedule = await getSchedule(env, eventId);
+  const days = [...new Set(schedule.map((r) => r.day))];
 
   const completion = await callAzureOpenAI(env, [
     { role: 'system', content: SYSTEM_PROMPT },
     ...history,
-  ]);
+  ], buildTools(days));
 
   const toolCall = completion.choices[0]?.message?.tool_calls?.[0];
   if (!toolCall) {
