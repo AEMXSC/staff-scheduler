@@ -1,0 +1,1822 @@
+[
+  {
+    "staff_name": "Sushant Sharma",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Lena Gambatese",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Todd Reeder",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Annika Koenig",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Umang Mital",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Kerstin Ebert",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Becky Fox",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Zack Einhorn",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "David Dobish",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Daniel Presedo",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Guillaume Meyer",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Keerthan Sathyanarayana",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Jochen Hagenstrom",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Mike Morris",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Andrew Hochradel",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "TBD--Firefly Rep TBD",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Skan Triki",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Firefly E (MR)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Chris Acosta",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Firefly E (MR)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Ben Insler",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Dacia Saenz",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 1",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 2",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 3",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 4",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 5",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Frame person 7",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sameera Polipalli",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Angela Jew",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Rocky Montez-Car",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "12:30",
+    "end_time": "16:30",
+    "station": "PS Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Gustavo Brunser",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Ben Smith",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Yolanda Xiao",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Marjorie Saks",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Karl Soule",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Devon Lachapelle",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sebastien Perier",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:30",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Simon Bernstein",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Michelle Gallina",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Andie Vitelli",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:00",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Adaobi Chine",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "12:30",
+    "end_time": "16:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Thao Do",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "10:15",
+    "end_time": "14:00",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Caden Mika",
+    "day": "Friday",
+    "date": "2026-09-11",
+    "start_time": "14:30",
+    "end_time": "18:15",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Sushant Sharma",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Lena Gambatese",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Todd Reeder",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Annika Koenig",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Umang Mital",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Kerstin Ebert",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Becky Fox",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Zack Einhorn",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "David Dobish",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Daniel Presedo",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Guillaume Meyer",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Keerthan Sathyanarayana",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Jochen Hagenstrom",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Mike Morris",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Andrew Hochradel",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "TBD--Firefly Rep TBD",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Skan Triki",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Firefly E",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Chris Acosta",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Firefly E",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Karl Soule",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Dacia Saenz",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 1",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 2",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 3",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 4",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 5",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Frame person 7",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sameera Polipalli",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Angela Jew",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Rocky Montez-Car",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "12:00",
+    "end_time": "16:30",
+    "station": "PS Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Gustavo Brunser",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Ben Smith",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Ben Insler",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Yolanda Xiao",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Marjorie Saks",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Devon Lachapelle",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sebastien Perier",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:00",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Simon Bernstein",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Michelle Gallina",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Andie Vitelli",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Adaobi Chine",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Thao Do",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "12:00",
+    "end_time": "16:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Caden Mika",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "ASUS",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "15:00",
+    "station": "JASON DRUSS",
+    "is_floater": false,
+    "group": "Partner Booth"
+  },
+  {
+    "staff_name": "Sushant Sharma",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Lena Gambatese",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Todd Reeder",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Annika Koenig",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Umang Mital",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Kerstin Ebert",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Becky Fox",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Zack Einhorn",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "David Dobish",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Daniel Presedo",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Guillaume Meyer",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Keerthan Sathyanarayana",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Jochen Hagenstrom",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Mike Morris",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Andrew Hochradel",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "TBD--Firefly Rep TBD",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Skan Triki",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Firefly E",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Chris Acosta",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Firefly E",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Ben Insler",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "11:00",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Ben Insler",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "11:00",
+    "end_time": "13:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Karl Soule",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "16:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Karl Soule",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "16:30",
+    "end_time": "18:15",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Dacia Saenz",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "11:00",
+    "end_time": "16:30",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 1",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 2",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 3",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 4",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 5",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Frame person 7",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sameera Polipalli",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Angela Jew",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Rocky Montez-Car",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "11:30",
+    "end_time": "16:00",
+    "station": "PS Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Ben Smith",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Yolanda Xiao",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Marjorie Saks",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Devon Lachapelle",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sebastien Perier",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "09:30",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sebastien Perier",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Simon Bernstein",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Michelle Gallina",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "11:30",
+    "end_time": "15:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Andie Vitelli",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Adaobi Chine",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Thao Do",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Caden Mika",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Sushant Sharma",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Lena Gambatese",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Todd Reeder",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Annika Koenig",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Premiere Pro",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Umang Mital",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Kerstin Ebert",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Premiere (AI - Gen Media & Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Becky Fox",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Zack Einhorn",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "After Effects",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "David Dobish",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Daniel Presedo",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Photoshop",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Guillaume Meyer",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Keerthan Sathyanarayana",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Substance",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Jochen Hagenstrom",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Mike Morris",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Stock",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Andrew Hochradel",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "TBD--Firefly Rep TBD",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Firefly + Video",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Skan Triki",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Firefly E",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Chris Acosta",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Firefly E",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Dacia Saenz",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "11:30",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Anton Knoblach",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "13:00",
+    "end_time": "14:30",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Kylee Pena",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "11:30",
+    "end_time": "13:00",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Jason Druss",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "14:30",
+    "end_time": "16:00",
+    "station": "AI Assistant",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 1",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 2",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 3",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 4",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 5",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Frame.io",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Frame person 6",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Frame person 7",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Frame.io Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sameera Polipalli",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Angela Jew",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Stock Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Rocky Montez-Car",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "10:30",
+    "end_time": "14:00",
+    "station": "PS Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Gustavo Brunser",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Ben Smith",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Ben Insler",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Yolanda Xiao",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Marjorie Saks",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Karl Soule",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Devon Lachapelle",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "PR Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Sebastien Perier",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Simon Bernstein",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "AE Floater",
+    "is_floater": true,
+    "group": "ATE Floaters"
+  },
+  {
+    "staff_name": "Michelle Gallina",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Andie Vitelli",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Adaobi Chine",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Thao Do",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "10:30",
+    "end_time": "14:00",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  },
+  {
+    "staff_name": "Caden Mika",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Info Counter",
+    "is_floater": false,
+    "group": "Info Counter"
+  }
+]

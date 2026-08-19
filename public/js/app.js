@@ -1,0 +1,133 @@
+import { fetchScheduleData, getZonedNow, escapeHtml } from './time-utils.js';
+import {
+  getDaySlots, findSlotIdx, renderMySchedule, renderWhosOnNow,
+} from './schedule.js';
+import { initCoverageFab, LS_NAME } from './coverage.js';
+
+const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
+
+async function main() {
+  const root = document.getElementById('app');
+
+  let event;
+  let data;
+  try {
+    event = await (await fetch(`/events/${eventId}.json`)).json();
+    data = await fetchScheduleData(event.dataUrl);
+  } catch (err) {
+    root.innerHTML = `<p class="hint">Could not load "${eventId}" — ${err.message}</p>`;
+    return;
+  }
+
+  document.title = `${event.name} · Schedule`;
+
+  const names = [...new Set(data.map((r) => r.staff_name).filter(Boolean))].sort();
+  let selectedName = '';
+  try { selectedName = localStorage.getItem(LS_NAME) || ''; } catch { /* noop */ }
+  let mode = 'my';
+
+  root.innerHTML = `
+    <header class="app-header">
+      <h1>${escapeHtml(event.name)}</h1>
+      <p class="app-sub">${escapeHtml(event.location || '')}</p>
+    </header>
+    <div class="toggle" role="group" aria-label="Schedule view">
+      <button class="toggle-btn" data-mode="my">My Schedule</button>
+      <button class="toggle-btn" data-mode="now">Who's On Now</button>
+    </div>
+    <div class="panel panel-my">
+      <div class="name-picker">
+        <label class="name-label" for="name-input">Your name</label>
+        <div class="name-input-wrap">
+          <input type="text" class="name-input" id="name-input" placeholder="Search your name…" value="${escapeHtml(selectedName)}" autocomplete="off">
+          <button class="name-clear" aria-label="Clear name" ${selectedName ? '' : 'hidden'}>✕</button>
+          <ul class="name-suggestions" hidden></ul>
+        </div>
+      </div>
+      <div class="my-slots"></div>
+    </div>
+    <div class="panel panel-now">
+      <div class="day-picker" role="group" aria-label="Select day"></div>
+      <div class="now-content"></div>
+    </div>`;
+
+  const myPanel = root.querySelector('.panel-my');
+  const nowPanel = root.querySelector('.panel-now');
+  const mySlotsEl = root.querySelector('.my-slots');
+  const dayPicker = root.querySelector('.day-picker');
+  const nowContentEl = root.querySelector('.now-content');
+  const toggle = root.querySelector('.toggle');
+
+  const zoned = getZonedNow(event.timezone);
+  let displayDay = event.days.find((d) => d.date === zoned.dateStr)?.day || event.days[0].day;
+
+  dayPicker.innerHTML = event.days.map(({ day }) => `<button class="day-btn${day === displayDay ? ' day-btn-active' : ''}" data-day="${day}" aria-label="${day}">${day.slice(0, 3)}</button>`).join('');
+
+  function currentSlotIdx() {
+    const slots = getDaySlots(data, displayDay);
+    return slots.length ? findSlotIdx(slots, getZonedNow(event.timezone).totalMins) : 0;
+  }
+
+  dayPicker.querySelectorAll('.day-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      displayDay = btn.dataset.day;
+      dayPicker.querySelectorAll('.day-btn').forEach((b) => b.classList.toggle('day-btn-active', b.dataset.day === displayDay));
+      renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx());
+    });
+  });
+
+  function showMode(m) {
+    mode = m;
+    toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.classList.toggle('toggle-active', btn.dataset.mode === mode));
+    myPanel.classList.toggle('panel-hidden', mode !== 'my');
+    nowPanel.classList.toggle('panel-hidden', mode !== 'now');
+    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx());
+  }
+
+  toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.addEventListener('click', () => showMode(btn.dataset.mode)));
+
+  const nameInput = myPanel.querySelector('.name-input');
+  const clearBtn = myPanel.querySelector('.name-clear');
+  const suggestionsEl = myPanel.querySelector('.name-suggestions');
+
+  function applyName(val) {
+    const name = val.trim();
+    selectedName = name;
+    try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
+    clearBtn.hidden = !name;
+    renderMySchedule(mySlotsEl, data, selectedName, event);
+  }
+
+  function buildSuggestions(filtered) {
+    if (!filtered.length) { suggestionsEl.hidden = true; return; }
+    suggestionsEl.innerHTML = filtered.map((n) => `<li class="name-option" data-name="${escapeHtml(n)}">${escapeHtml(n)}</li>`).join('');
+    suggestionsEl.hidden = false;
+  }
+
+  nameInput.addEventListener('focus', () => {
+    const q = nameInput.value.trim().toLowerCase();
+    buildSuggestions(q ? names.filter((n) => n.toLowerCase().includes(q)) : names);
+  });
+  nameInput.addEventListener('input', () => {
+    clearBtn.hidden = !nameInput.value.trim();
+    const q = nameInput.value.trim().toLowerCase();
+    buildSuggestions(q ? names.filter((n) => n.toLowerCase().includes(q)) : names);
+  });
+  nameInput.addEventListener('blur', () => setTimeout(() => { suggestionsEl.hidden = true; }, 150));
+  suggestionsEl.addEventListener('mousedown', (e) => {
+    const opt = e.target.closest('.name-option');
+    if (opt) { nameInput.value = opt.dataset.name; applyName(opt.dataset.name); suggestionsEl.hidden = true; }
+  });
+  clearBtn.addEventListener('click', () => { nameInput.value = ''; applyName(''); nameInput.focus(); });
+
+  renderMySchedule(mySlotsEl, data, selectedName, event);
+  showMode(mode);
+  initCoverageFab(data, event);
+
+  setInterval(() => {
+    if (mode === 'my') renderMySchedule(mySlotsEl, data, selectedName, event);
+    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx());
+  }, 60_000);
+}
+
+main();

@@ -1,0 +1,13 @@
+{
+  "name": "IBC 2026",
+  "location": "Amsterdam",
+  "timezone": "Europe/Amsterdam",
+  "dataUrl": "/data/ibc-2026-schedule.json",
+  "slackChannelId": "",
+  "days": [
+    { "day": "Friday", "date": "2026-09-11" },
+    { "day": "Saturday", "date": "2026-09-12" },
+    { "day": "Sunday", "date": "2026-09-13" },
+    { "day": "Monday", "date": "2026-09-14" }
+  ]
+}
