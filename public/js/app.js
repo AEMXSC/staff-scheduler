@@ -30,7 +30,7 @@ async function main() {
   root.innerHTML = `
     <header class="app-header">
       <div class="brand-row">
-        <span class="brand-adobe" aria-hidden="true">A</span>
+        <img class="brand-adobe-logo" src="/images/adobe-logo.svg" alt="Adobe">
         <span class="brand-divider" aria-hidden="true"></span>
         <img class="brand-ibc-logo" src="/images/ibc-logo-white.png" alt="IBC">
       </div>
