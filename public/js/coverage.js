@@ -57,6 +57,7 @@ export function initCoverageFab(data, event) {
   modal.setAttribute('aria-labelledby', 'coverage-title');
   modal.hidden = true;
   modal.innerHTML = `
+    <div class="coverage-backdrop"></div>
     <div class="coverage-sheet">
       <h2 class="coverage-title" id="coverage-title">Need Coverage?</h2>
       <div class="coverage-context" id="cov-context"></div>
@@ -65,8 +66,7 @@ export function initCoverageFab(data, event) {
       <button class="coverage-send" id="cov-send">Send to Slack Channel</button>
       <button class="coverage-copy" id="cov-copy">Copy message instead</button>
       <button class="coverage-close" aria-label="Close">✕</button>
-    </div>
-    <div class="coverage-backdrop"></div>`;
+    </div>`;
   document.body.append(modal);
 
   const contextEl = modal.querySelector('#cov-context');
