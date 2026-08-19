@@ -28,6 +28,18 @@ export function toMins(hhmm) {
   return h * 60 + m;
 }
 
+// Half-hour boundary times between start and end, inclusive of both ends --
+// used to populate the shift-change request's "From"/"To" dropdowns.
+export function timeRangeSteps(start, end, stepMins = 30) {
+  const endMins = toMins(end);
+  const steps = [];
+  for (let mins = toMins(start); mins < endMins; mins += stepMins) {
+    steps.push(`${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`);
+  }
+  steps.push(end);
+  return steps;
+}
+
 export function fmt12(hhmm) {
   const [h, m] = hhmm.split(':').map(Number);
   const suffix = h >= 12 ? 'pm' : 'am';

@@ -2,7 +2,7 @@ import { fetchScheduleData, getZonedNow, escapeHtml } from './time-utils.js';
 import {
   getDaySlots, findSlotIdx, renderMySchedule, renderWhosOnNow,
 } from './schedule.js';
-import { initCoverageFab, LS_NAME } from './coverage.js';
+import { initShiftChangeFab, LS_NAME } from './coverage.js';
 
 const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
 
@@ -122,7 +122,7 @@ async function main() {
 
   renderMySchedule(mySlotsEl, data, selectedName, event);
   showMode(mode);
-  initCoverageFab(data, event);
+  initShiftChangeFab(data, event);
 
   setInterval(() => {
     if (mode === 'my') renderMySchedule(mySlotsEl, data, selectedName, event);

@@ -30,6 +30,10 @@ export function rowsActiveAt(data, dayName, totalMins) {
     && totalMins >= toMins(r.start_time) && totalMins < toMins(r.end_time));
 }
 
+export function getFreeFloaters(data, dayName, totalMins) {
+  return rowsActiveAt(data, dayName, totalMins).filter((r) => r.is_floater);
+}
+
 export function renderMySchedule(container, data, selectedName, event) {
   if (!selectedName) {
     container.innerHTML = '<p class="hint">Select your name above to see your schedule.</p>';
@@ -93,7 +97,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx) {
   const active = rowsActiveAt(data, dayName, toMins(slot.start));
 
   const primaries = active.filter((r) => !r.is_floater);
-  const floaters = active.filter((r) => r.is_floater);
+  const floaters = getFreeFloaters(data, dayName, toMins(slot.start));
 
   const byStation = new Map();
   primaries.forEach((r) => {
