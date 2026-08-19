@@ -24,7 +24,7 @@
 .admin-chat {
   display: flex;
   flex-direction: column;
-  max-width: 720px;
+  max-width: var(--content-max);
   height: calc(100vh - 220px);
   min-height: 400px;
   background: var(--surface);
@@ -45,7 +45,12 @@
 .admin-msg { display: flex; }
 .admin-msg-user { justify-content: flex-end; }
 .admin-bubble {
-  max-width: 85%;
+  /* Cap absolute width, not just percentage -- the chat panel itself
+     grows on a wide screen (matches the rest of the app), but a single
+     line of chat text shouldn't stretch edge-to-edge just because the
+     container did. Tables inside a bubble still get the full cap's width
+     to breathe, and scroll horizontally past that. */
+  max-width: min(85%, 640px);
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

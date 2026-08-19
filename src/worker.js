@@ -36,12 +36,20 @@ async function handleAuth(request, env) {
 async function handleChat(request, env) {
   if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
 
-  const { message, eventId } = await request.json();
+  const { messages, eventId } = await request.json();
+  if (!Array.isArray(messages) || !messages.length) return json({ error: 'Missing messages' }, 400);
+
+  // Force role to user/assistant only -- a client can't smuggle in its own
+  // "system" message to override SYSTEM_PROMPT.
+  const history = messages
+    .filter((m) => typeof m?.content === 'string' && m.content)
+    .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+
   const schedule = await getSchedule(env, eventId);
 
   const completion = await callAzureOpenAI(env, [
     { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: message },
+    ...history,
   ]);
 
   const toolCall = completion.choices[0]?.message?.tool_calls?.[0];

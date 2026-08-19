@@ -40,6 +40,11 @@ const sendBtn = document.getElementById('admin-send');
 let token = '';
 try { token = sessionStorage.getItem(SESSION_KEY) || ''; } catch { /* noop */ }
 
+// Sent back on every request so follow-ups ("and floaters?") have context --
+// capped so a long session doesn't grow the request unboundedly.
+const MAX_HISTORY = 20;
+let history = [];
+
 function showChat() {
   authEl.hidden = true;
   chatEl.hidden = false;
@@ -169,13 +174,16 @@ async function send() {
   textarea.style.height = 'auto';
   sendBtn.disabled = true;
 
+  history.push({ role: 'user', content: message });
+  history = history.slice(-MAX_HISTORY);
+
   const thinking = addMessage('ai', '…');
 
   try {
     const resp = await fetch('/api/admin/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ message, eventId }),
+      body: JSON.stringify({ messages: history, eventId }),
     });
 
     if (resp.status === 401) {
@@ -194,6 +202,9 @@ async function send() {
     const bubble = row.querySelector('.admin-bubble');
     if (data.table) bubble.append(renderTable(data.table));
     if (data.pendingAction) renderPendingAction(bubble, data.pendingAction);
+
+    history.push({ role: 'assistant', content: data.message || 'Done.' });
+    history = history.slice(-MAX_HISTORY);
   } catch {
     thinking.remove();
     addMessage('ai', '⚠ Network error.');
