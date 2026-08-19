@@ -29,6 +29,11 @@ async function main() {
 
   root.innerHTML = `
     <header class="app-header">
+      <div class="brand-row">
+        <span class="brand-adobe" aria-hidden="true">A</span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <img class="brand-ibc-logo" src="/images/ibc-logo-white.png" alt="IBC">
+      </div>
       <h1>${escapeHtml(event.name)}</h1>
       <p class="app-sub">${escapeHtml(event.location || '')}</p>
     </header>
