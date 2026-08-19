@@ -24,7 +24,7 @@
 .admin-chat {
   display: flex;
   flex-direction: column;
-  max-width: var(--content-max);
+  width: 100%;
   height: calc(100vh - 220px);
   min-height: 400px;
   background: var(--surface);
