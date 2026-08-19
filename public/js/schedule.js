@@ -34,7 +34,11 @@ export function getFreeFloaters(data, dayName, totalMins) {
   return rowsActiveAt(data, dayName, totalMins).filter((r) => r.is_floater);
 }
 
-export function renderMySchedule(container, data, selectedName, event) {
+// onRequestChange(slot), if given, is called with the exact slot object
+// (not a re-derived guess) when its "Request change" button is clicked --
+// wired up by index after render, so no slot data has to round-trip through
+// HTML attributes.
+export function renderMySchedule(container, data, selectedName, event, onRequestChange) {
   if (!selectedName) {
     container.innerHTML = '<p class="hint">Select your name above to see your schedule.</p>';
     return;
@@ -48,6 +52,7 @@ export function renderMySchedule(container, data, selectedName, event) {
 
   const zoned = getZonedNow(event.timezone);
   const currentDay = event.days.find((d) => d.date === zoned.dateStr)?.day || null;
+  const renderedSlots = [];
 
   const dayCards = event.days.map(({ day }) => {
     const slots = mySlots
@@ -61,6 +66,7 @@ export function renderMySchedule(container, data, selectedName, event) {
       const isActive = isToday
         && zoned.totalMins >= toMins(slot.start_time)
         && zoned.totalMins < toMins(slot.end_time);
+      const idx = renderedSlots.push(slot) - 1;
 
       return `<div class="slot${isActive ? ' slot-active' : ''}${slot.is_floater ? ' slot-floater' : ''}">
         <div class="slot-top">
@@ -69,6 +75,7 @@ export function renderMySchedule(container, data, selectedName, event) {
           ${isActive ? '<span class="now-badge">NOW</span>' : ''}
         </div>
         ${slot.is_floater ? '<div class="floater-label">Backup / floater</div>' : ''}
+        <button class="slot-request-btn" data-idx="${idx}">Request change</button>
       </div>`;
     }).join('');
 
@@ -82,6 +89,12 @@ export function renderMySchedule(container, data, selectedName, event) {
   }).filter(Boolean).join('');
 
   container.innerHTML = dayCards || '<p class="hint">No slots across any event day.</p>';
+
+  if (onRequestChange) {
+    container.querySelectorAll('.slot-request-btn').forEach((btn) => {
+      btn.addEventListener('click', () => onRequestChange(renderedSlots[Number(btn.dataset.idx)]));
+    });
+  }
 }
 
 export function renderWhosOnNow(container, data, dayName, slotIdx) {

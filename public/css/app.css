@@ -128,6 +128,18 @@ body {
 }
 .floater-label { color: var(--floater); font-size: 12px; margin-top: 4px; }
 
+.slot-request-btn {
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .day-picker { display: flex; gap: 6px; margin-bottom: 12px; }
 .day-btn {
   flex: 1;
@@ -184,24 +196,6 @@ body {
 .floater-panel-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); margin-bottom: 8px; }
 .floater-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
-.coverage-fab {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  cursor: pointer;
-  z-index: 20;
-}
-
 .coverage-modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; }
 .coverage-modal[hidden] { display: none; }
 .coverage-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
@@ -218,6 +212,7 @@ body {
 .coverage-context { color: var(--text-dim); font-size: 14px; margin-bottom: 12px; }
 
 .cov-window-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.cov-window-row[hidden] { display: none; }
 .cov-field { flex: 1; }
 .cov-field label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
 .cov-field select {

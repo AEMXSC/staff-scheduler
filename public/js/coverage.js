@@ -1,29 +1,11 @@
 import {
-  getZonedNow, toMins, fmt12, escapeHtml, timeRangeSteps,
+  toMins, fmt12, escapeHtml, timeRangeSteps,
 } from './time-utils.js';
 import { getFreeFloaters } from './schedule.js';
-
-const LS_NAME = 'staff-scheduler-name';
-
-function findCurrentAssignment(data, name, event) {
-  const zoned = getZonedNow(event.timezone);
-  const dayName = event.days.find((d) => d.date === zoned.dateStr)?.day;
-  if (!dayName || !name) return null;
-
-  const assignment = data.find((r) => r.staff_name === name
-    && r.day === dayName
-    && zoned.totalMins >= toMins(r.start_time)
-    && zoned.totalMins < toMins(r.end_time)) || null;
-
-  return assignment ? { ...assignment, dayName } : null;
-}
 
 // "asking <target>" for a directed request; falls back to today's open
 // broadcast wording when no specific person is chosen.
 function buildShiftChangeMessage(name, assignment, windowStart, windowEnd, target) {
-  if (!assignment) {
-    return `🔴 COVERAGE NEEDED: ${name || 'Someone'} needs coverage. Can anyone help?`;
-  }
   const time = `${fmt12(windowStart)}–${fmt12(windowEnd)}`;
   if (target) {
     return `🔄 SHIFT CHANGE: ${name} needs ${assignment.station} covered ${time} — asking ${target}.`;
@@ -51,13 +33,11 @@ function openSlack(channel, message) {
   }
 }
 
-export function initShiftChangeFab(data, event) {
-  const fab = document.createElement('button');
-  fab.className = 'coverage-fab';
-  fab.setAttribute('aria-label', 'Request shift change');
-  fab.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-  document.body.append(fab);
-
+// Builds the (initially hidden) Shift Change Request modal and returns
+// { open(slot, requesterName) } -- called by whoever's showing the specific
+// shift being requested (a card in My Schedule), so the modal is always
+// pre-filled from that exact slot rather than guessing from the real clock.
+export function initShiftChangeModal(data, event) {
   const modal = document.createElement('div');
   modal.className = 'coverage-modal';
   modal.setAttribute('role', 'dialog');
@@ -69,7 +49,7 @@ export function initShiftChangeFab(data, event) {
     <div class="coverage-sheet">
       <h2 class="coverage-title" id="coverage-title">Request Shift Change</h2>
       <div class="coverage-context" id="cov-context"></div>
-      <div class="cov-window-row" id="cov-window-row" hidden>
+      <div class="cov-window-row" id="cov-window-row">
         <div class="cov-field">
           <label for="cov-start">From</label>
           <select id="cov-start"></select>
@@ -79,7 +59,7 @@ export function initShiftChangeFab(data, event) {
           <select id="cov-end"></select>
         </div>
       </div>
-      <div class="cov-field" id="cov-target-row" hidden>
+      <div class="cov-field" id="cov-target-row">
         <label for="cov-target">Ask</label>
         <select id="cov-target"></select>
       </div>
@@ -92,10 +72,8 @@ export function initShiftChangeFab(data, event) {
   document.body.append(modal);
 
   const contextEl = modal.querySelector('#cov-context');
-  const windowRow = modal.querySelector('#cov-window-row');
   const startSel = modal.querySelector('#cov-start');
   const endSel = modal.querySelector('#cov-end');
-  const targetRow = modal.querySelector('#cov-target-row');
   const targetSel = modal.querySelector('#cov-target');
   const msgEl = modal.querySelector('#cov-msg');
   const sendBtn = modal.querySelector('#cov-send');
@@ -103,14 +81,14 @@ export function initShiftChangeFab(data, event) {
   const closeBtn = modal.querySelector('.coverage-close');
   const backdrop = modal.querySelector('.coverage-backdrop');
 
-  let currentName = '';
-  let currentAssignment = null;
+  let requesterName = '';
+  let assignment = null;
   let steps = [];
 
   function refreshMessage() {
     msgEl.value = buildShiftChangeMessage(
-      currentName,
-      currentAssignment,
+      requesterName,
+      assignment,
       startSel.value,
       endSel.value,
       targetSel.value,
@@ -119,7 +97,7 @@ export function initShiftChangeFab(data, event) {
 
   function populateTargetOptions() {
     const names = [...new Set(
-      getFreeFloaters(data, currentAssignment.dayName, toMins(startSel.value)).map((r) => r.staff_name),
+      getFreeFloaters(data, assignment.day, toMins(startSel.value)).map((r) => r.staff_name),
     )];
     targetSel.innerHTML = ['<option value="">Anyone / open ask</option>']
       .concat(names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`))
@@ -129,7 +107,7 @@ export function initShiftChangeFab(data, event) {
   function populateEndOptions() {
     const options = steps.filter((t) => toMins(t) > toMins(startSel.value));
     endSel.innerHTML = options.map((t) => `<option value="${t}">${fmt12(t)}</option>`).join('');
-    endSel.value = currentAssignment.end_time;
+    endSel.value = assignment.end_time;
   }
 
   function onStartChange() {
@@ -142,42 +120,10 @@ export function initShiftChangeFab(data, event) {
   endSel.addEventListener('change', refreshMessage);
   targetSel.addEventListener('change', refreshMessage);
 
-  function openModal() {
-    try { currentName = localStorage.getItem(LS_NAME) || ''; } catch { currentName = ''; }
-    currentAssignment = findCurrentAssignment(data, currentName, event);
-
-    if (currentAssignment) {
-      contextEl.innerHTML = `<div><strong>${escapeHtml(currentName)}</strong></div>
-        <div>${escapeHtml(currentAssignment.station)}</div>
-        <div>${fmt12(currentAssignment.start_time)}–${fmt12(currentAssignment.end_time)}</div>`;
-
-      windowRow.hidden = false;
-      targetRow.hidden = false;
-
-      steps = timeRangeSteps(currentAssignment.start_time, currentAssignment.end_time);
-      startSel.innerHTML = steps.slice(0, -1).map((t) => `<option value="${t}">${fmt12(t)}</option>`).join('');
-      startSel.value = currentAssignment.start_time;
-      populateEndOptions();
-      populateTargetOptions();
-    } else {
-      windowRow.hidden = true;
-      targetRow.hidden = true;
-      contextEl.innerHTML = currentName
-        ? `<div><strong>${escapeHtml(currentName)}</strong> — no active slot right now</div>`
-        : '<div class="hint">Select your name in My Schedule first</div>';
-    }
-
-    refreshMessage();
-    modal.hidden = false;
-    msgEl.focus();
-  }
-
   function closeModal() {
     modal.hidden = true;
-    fab.focus();
   }
 
-  fab.addEventListener('click', openModal);
   closeBtn.addEventListener('click', closeModal);
   backdrop.addEventListener('click', closeModal);
   sendBtn.addEventListener('click', () => openSlack(event.slackChannelId, msgEl.value));
@@ -195,6 +141,25 @@ export function initShiftChangeFab(data, event) {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !modal.hidden) closeModal();
   });
-}
 
-export { LS_NAME };
+  function open(slot, name) {
+    assignment = slot;
+    requesterName = name;
+
+    contextEl.innerHTML = `<div><strong>${escapeHtml(requesterName)}</strong></div>
+      <div>${escapeHtml(assignment.station)} · ${escapeHtml(assignment.day)}</div>
+      <div>${fmt12(assignment.start_time)}–${fmt12(assignment.end_time)}</div>`;
+
+    steps = timeRangeSteps(assignment.start_time, assignment.end_time);
+    startSel.innerHTML = steps.slice(0, -1).map((t) => `<option value="${t}">${fmt12(t)}</option>`).join('');
+    startSel.value = assignment.start_time;
+    populateEndOptions();
+    populateTargetOptions();
+    refreshMessage();
+
+    modal.hidden = false;
+    msgEl.focus();
+  }
+
+  return { open };
+}

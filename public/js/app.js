@@ -2,9 +2,10 @@ import { fetchScheduleData, getZonedNow, escapeHtml } from './time-utils.js';
 import {
   getDaySlots, findSlotIdx, renderMySchedule, renderWhosOnNow,
 } from './schedule.js';
-import { initShiftChangeFab, LS_NAME } from './coverage.js';
+import { initShiftChangeModal } from './coverage.js';
 
 const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
+const LS_NAME = 'staff-scheduler-name';
 
 async function main() {
   const root = document.getElementById('app');
@@ -90,12 +91,15 @@ async function main() {
   const clearBtn = myPanel.querySelector('.name-clear');
   const suggestionsEl = myPanel.querySelector('.name-suggestions');
 
+  const shiftChangeModal = initShiftChangeModal(data, event);
+  const onRequestChange = (slot) => shiftChangeModal.open(slot, selectedName);
+
   function applyName(val) {
     const name = val.trim();
     selectedName = name;
     try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
     clearBtn.hidden = !name;
-    renderMySchedule(mySlotsEl, data, selectedName, event);
+    renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
   }
 
   function buildSuggestions(filtered) {
@@ -120,12 +124,11 @@ async function main() {
   });
   clearBtn.addEventListener('click', () => { nameInput.value = ''; applyName(''); nameInput.focus(); });
 
-  renderMySchedule(mySlotsEl, data, selectedName, event);
+  renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
   showMode(mode);
-  initShiftChangeFab(data, event);
 
   setInterval(() => {
-    if (mode === 'my') renderMySchedule(mySlotsEl, data, selectedName, event);
+    if (mode === 'my') renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
     if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx());
   }, 60_000);
 }
