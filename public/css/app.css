@@ -203,6 +203,7 @@ body {
 }
 
 .coverage-modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; }
+.coverage-modal[hidden] { display: none; }
 .coverage-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
 .coverage-sheet {
   position: relative;
