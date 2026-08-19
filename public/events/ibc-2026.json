@@ -2,7 +2,7 @@
   "name": "IBC 2026",
   "location": "Amsterdam",
   "timezone": "Europe/Amsterdam",
-  "dataUrl": "/data/ibc-2026-schedule.json",
+  "dataUrl": "/api/schedule/ibc-2026",
   "slackChannelId": "",
   "days": [
     { "day": "Friday", "date": "2026-09-11" },

@@ -1,8 +1,16 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "staff-scheduler",
+  "main": "src/worker.js",
   "compatibility_date": "2026-05-03",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "kv_namespaces": [
+    { "binding": "SCHEDULE_KV", "id": "323c778a4fc248318a038f37bba2f9a6" }
+  ],
+  "vars": {
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-5.4-mini"
   }
 }
