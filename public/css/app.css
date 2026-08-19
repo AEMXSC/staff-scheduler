@@ -274,8 +274,13 @@ body {
   border-radius: var(--radius-pill);
   padding: 5px 12px;
   font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
 }
+.chip-link { cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
+.chip-link:hover { background: var(--gray-200); border-color: var(--accent); }
 .chip-floater { border-color: var(--floater); color: var(--floater); }
+.chip-floater.chip-link:hover { background: var(--gray-200); border-color: var(--floater); }
 
 .floater-panel {
   background: var(--surface);

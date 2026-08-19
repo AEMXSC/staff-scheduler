@@ -97,7 +97,7 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
   }
 }
 
-export function renderWhosOnNow(container, data, dayName, slotIdx) {
+export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerson) {
   const daySlots = getDaySlots(data, dayName);
 
   if (!daySlots.length) {
@@ -121,11 +121,11 @@ export function renderWhosOnNow(container, data, dayName, slotIdx) {
   const stationCards = [...byStation.entries()].sort(([a], [b]) => a.localeCompare(b)).map(
     ([station, rows]) => `<div class="station-card">
       <div class="station-name">${escapeHtml(station)}</div>
-      <div class="station-people">${rows.map((r) => `<span class="chip">${escapeHtml(r.staff_name)}</span>`).join('')}</div>
+      <div class="station-people">${rows.map((r) => `<button class="chip chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</button>`).join('')}</div>
     </div>`,
   ).join('');
 
-  const floaterChips = floaters.map((r) => `<span class="chip chip-floater" title="${escapeHtml(r.station)}">${escapeHtml(r.staff_name)}</span>`).join('');
+  const floaterChips = floaters.map((r) => `<button class="chip chip-floater chip-link" data-name="${escapeHtml(r.staff_name)}" title="${escapeHtml(r.station)}">${escapeHtml(r.staff_name)}</button>`).join('');
 
   const canPrev = effectiveIdx > 0;
   const canNext = effectiveIdx < daySlots.length - 1;
@@ -144,9 +144,15 @@ export function renderWhosOnNow(container, data, dayName, slotIdx) {
 
   container.querySelectorAll('.nav-btn:not([disabled])').forEach((btn) => {
     btn.addEventListener('click', () => {
-      renderWhosOnNow(container, data, dayName, effectiveIdx + parseInt(btn.dataset.dir, 10));
+      renderWhosOnNow(container, data, dayName, effectiveIdx + parseInt(btn.dataset.dir, 10), onSelectPerson);
     });
   });
+
+  if (onSelectPerson) {
+    container.querySelectorAll('.chip-link').forEach((btn) => {
+      btn.addEventListener('click', () => onSelectPerson(btn.dataset.name));
+    });
+  }
 
   return { slot, effectiveIdx, daySlots };
 }

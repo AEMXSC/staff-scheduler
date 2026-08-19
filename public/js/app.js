@@ -78,7 +78,7 @@ async function main() {
     btn.addEventListener('click', () => {
       displayDay = btn.dataset.day;
       dayPicker.querySelectorAll('.day-btn').forEach((b) => b.classList.toggle('day-btn-active', b.dataset.day === displayDay));
-      renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx());
+      renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
     });
   });
 
@@ -87,7 +87,7 @@ async function main() {
     toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.classList.toggle('toggle-active', btn.dataset.mode === mode));
     myPanel.classList.toggle('panel-hidden', mode !== 'my');
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
-    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx());
+    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
   }
 
   toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.addEventListener('click', () => showMode(btn.dataset.mode)));
@@ -105,6 +105,12 @@ async function main() {
     try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
     clearBtn.hidden = !name;
     renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
+  }
+
+  function onSelectPerson(name) {
+    nameInput.value = name;
+    applyName(name);
+    showMode('my');
   }
 
   function buildSuggestions(filtered) {
@@ -134,7 +140,7 @@ async function main() {
 
   setInterval(() => {
     if (mode === 'my') renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
-    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx());
+    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
   }, 60_000);
 }
 
