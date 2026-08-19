@@ -4,7 +4,7 @@ import {
 } from './auth.js';
 import { callAzureOpenAI } from './openai.js';
 import {
-  findRows, sortRows, planReassign, applyReassign, planSwap, applySwap,
+  findRows, sortRows, groupByCount, planReassign, applyReassign, planSwap, applySwap,
 } from './schedule-ops.js';
 
 const SYSTEM_PROMPT = 'You are the scheduling assistant for a staff event schedule. '
@@ -15,6 +15,22 @@ const SYSTEM_PROMPT = 'You are the scheduling assistant for a staff event schedu
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
+// The client only stores `message` (not the table) as this turn's history
+// for future follow-ups -- for small result sets, spell out the actual
+// facts in the message itself so "and Saturday?" has something concrete
+// to ground on, instead of a generic "Found 1 match." that carries no
+// information forward.
+const INLINE_SUMMARY_LIMIT = 5;
+
+function summarizeRows(rows) {
+  if (rows.length > INLINE_SUMMARY_LIMIT) {
+    return `Found ${rows.length} matches.`;
+  }
+  return rows
+    .map((r) => `${r.staff_name}: ${r.station}, ${r.day} ${r.start_time}–${r.end_time}`)
+    .join('; ');
 }
 
 async function handleGetSchedule(eventId, env) {
@@ -63,6 +79,23 @@ async function handleChat(request, env) {
 
   if (name === 'query_schedule') {
     let rows = findRows(schedule, args);
+
+    if (args.group_by) {
+      let groups = groupByCount(rows, args.group_by, args.order);
+      if (args.limit) groups = groups.slice(0, args.limit);
+      if (!groups.length) return json({ message: 'No matching schedule rows found.' });
+      const groupMessage = groups.length > INLINE_SUMMARY_LIMIT
+        ? `${groups.length} groups.`
+        : groups.map((g) => `${g.key}: ${g.count}`).join('; ');
+      return json({
+        message: groupMessage,
+        table: {
+          headers: ['Name', 'Shift count'],
+          rows: groups.map((g) => [g.key, String(g.count)]),
+        },
+      });
+    }
+
     if (args.sort_by) rows = sortRows(rows, args.sort_by, args.order);
 
     if (args.count_only) {
@@ -73,7 +106,7 @@ async function handleChat(request, env) {
     if (!rows.length) return json({ message: 'No matching schedule rows found.' });
 
     return json({
-      message: `Found ${rows.length} match${rows.length > 1 ? 'es' : ''}.`,
+      message: summarizeRows(rows),
       table: {
         headers: ['Name', 'Day', 'Station', 'Time'],
         rows: rows.map((r) => [r.staff_name, r.day, r.station, `${r.start_time}–${r.end_time}`]),
@@ -84,6 +117,9 @@ async function handleChat(request, env) {
   if (name === 'reassign_station') {
     const plan = planReassign(schedule, args);
     if (!plan) return json({ message: `Couldn't find ${args.staff_name} on ${args.day}.` });
+    if (plan.ambiguous) {
+      return json({ message: `"${args.staff_name}" matches multiple people (${plan.ambiguous.join(', ')}) -- use a full name.` });
+    }
     return json({
       message: `Proposed: move ${args.staff_name} to ${args.new_station} on ${args.day}. Confirm to apply.`,
       table: plan.table,
@@ -94,6 +130,9 @@ async function handleChat(request, env) {
   if (name === 'swap_people') {
     const plan = planSwap(schedule, args);
     if (!plan) return json({ message: 'Could not find one or both people on that day.' });
+    if (plan.ambiguous) {
+      return json({ message: `That name matches multiple people (${plan.ambiguous.join(', ')}) -- use a full name.` });
+    }
     return json({
       message: `Proposed: swap ${args.staff_name_a} and ${args.staff_name_b} on ${args.day}. Confirm to apply.`,
       table: plan.table,
