@@ -55,6 +55,15 @@ function systemPrompt(days, digest, fullDump) {
     + '(CAST(substr(end_time,1,2) AS INTEGER)*60 + CAST(substr(end_time,4,2) AS INTEGER)) '
     + '- (CAST(substr(start_time,1,2) AS INTEGER)*60 + CAST(substr(start_time,4,2) AS INTEGER)) '
     + '-- use this expression for any duration/length/longer-than question\n\n'
+    + 'There is also a directory table for REACHING staff (query it with run_sql too):\n'
+    + 'contacts(id, event_id, name, email, phone, slack, whatsapp)\n'
+    + `- filter WHERE event_id = '${EVENT_ID}'; join to shifts on contacts.name = shifts.staff_name\n`
+    + '- use it for any "phone/email/slack/how do I reach <person, or the person on <station> that day>" question; '
+    + 'a person may be in contacts but have some fields blank\n\n'
+    + `Current time is ${new Date().toISOString()} (UTC). The event runs Fri 2026-09-11 to Mon 2026-09-14 in `
+    + 'Amsterdam (CEST = UTC+2); day column holds the weekday name and times are local HH:MM. For "who is on '
+    + 'now/next", map the current Amsterdam date to that weekday and compare local times; if today is outside '
+    + 'the event window, say so rather than guessing.\n\n'
     + `Dataset digest: ${digest}\n\n`
     + 'To change the schedule, call reassign_station or swap_people -- you never write directly, a human confirms.\n'
     + 'In your final answer, state counts/numbers verbatim from the query result (row_count is exact even when rows are truncated); '
