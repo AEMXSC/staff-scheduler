@@ -3,6 +3,19 @@
 
 const ROW_COLS = 'staff_name, day, date, start_time, end_time, station, is_floater, group_name';
 
+// Times are zero-padded 'HH:MM' 24h everywhere -- text comparison, sorting,
+// and toMin() all rely on it. Normalize a write value to that form (accepting
+// an unpadded hour like "9:00"), or null if it isn't a real time-of-day.
+function normalizeTime(t) {
+  if (typeof t !== 'string') return null;
+  const m = t.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (h > 23 || min > 59) return null;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
 export async function getSchedule(env, eventId) {
   const { results } = await env.DB
     .prepare(`SELECT ${ROW_COLS} FROM shifts WHERE event_id = ? ORDER BY id`)
@@ -138,6 +151,130 @@ export async function planSwap(env, eventId, { staff_name_a, staff_name_b, day }
   };
 }
 
+// Identify target shift rows for cancel/edit: name + day, optionally narrowed
+// by station and/or current start_time when a person has several shifts.
+async function matchShifts(env, eventId, { staff_name, day, station, start_time }) {
+  const clauses = ['event_id = ?', 'lower(staff_name) LIKE ?', 'day = ?'];
+  const binds = [eventId, `%${staff_name.toLowerCase()}%`, day];
+  if (station) { clauses.push('lower(station) LIKE ?'); binds.push(`%${station.toLowerCase()}%`); }
+  if (start_time) { clauses.push('start_time = ?'); binds.push(normalizeTime(start_time) || start_time); }
+  const { results } = await env.DB
+    .prepare(`SELECT id, staff_name, day, date, start_time, end_time, station, is_floater
+              FROM shifts WHERE ${clauses.join(' AND ')}`)
+    .bind(...binds)
+    .all();
+  return results;
+}
+
+export async function planAddShift(env, eventId, {
+  staff_name, day, start_time, end_time, station, is_floater,
+}) {
+  const st = normalizeTime(start_time);
+  const et = normalizeTime(end_time);
+  if (!st || !et) return { badTime: true };
+  // Borrow the calendar date other shifts on that day already use, if any.
+  const sample = await env.DB
+    .prepare('SELECT date FROM shifts WHERE event_id = ? AND day = ? AND date IS NOT NULL LIMIT 1')
+    .bind(eventId, day)
+    .first();
+  const row = {
+    event_id: eventId, staff_name, day, date: sample?.date || null,
+    start_time: st, end_time: et, station, is_floater: is_floater ? 1 : 0,
+  };
+  return {
+    table: {
+      headers: ['Name', 'Day', 'Start', 'End', 'Station'],
+      rows: [[staff_name, day, st, et, `${station}${is_floater ? ' (floater)' : ''} ← new`]],
+    },
+    pending: { type: 'add_shift', row },
+  };
+}
+
+export async function planCancelShift(env, eventId, args) {
+  const rows = await matchShifts(env, eventId, args);
+  if (!rows.length) return { error: 'notfound' };
+  const names = distinctNames(rows);
+  if (names.length > 1) return { ambiguous: names };
+  if (rows.length > 1) return { manyShifts: rows.map((r) => `${r.station} ${r.start_time}-${r.end_time}`) };
+  const r = rows[0];
+  return {
+    table: {
+      headers: ['Name', 'Day', 'Station', 'Shift'],
+      rows: [[r.staff_name, r.day, r.station, `${r.start_time}-${r.end_time} ← remove`]],
+    },
+    pending: {
+      type: 'cancel_shift',
+      ids: [r.id],
+      expect: [{ station: r.station, start_time: r.start_time, end_time: r.end_time }],
+    },
+  };
+}
+
+export async function planEditShiftTime(env, eventId, args) {
+  const ns = normalizeTime(args.new_start_time);
+  const ne = normalizeTime(args.new_end_time);
+  if (!ns || !ne) return { badTime: true };
+  const rows = await matchShifts(env, eventId, args);
+  if (!rows.length) return { error: 'notfound' };
+  const names = distinctNames(rows);
+  if (names.length > 1) return { ambiguous: names };
+  if (rows.length > 1) return { manyShifts: rows.map((r) => `${r.station} ${r.start_time}-${r.end_time}`) };
+  const r = rows[0];
+  return {
+    table: {
+      headers: ['Name', 'Day', 'Station', 'Before', 'After'],
+      rows: [[r.staff_name, r.day, r.station, `${r.start_time}-${r.end_time}`, `${ns}-${ne} ← changed`]],
+    },
+    pending: {
+      type: 'edit_shift_time',
+      ids: [r.id],
+      expect: [{ start_time: r.start_time, end_time: r.end_time }],
+      new_start_time: ns,
+      new_end_time: ne,
+    },
+  };
+}
+
+// Per-slot headcount across a day. Buckets in JS (two plain queries) rather
+// than a recursive CTE -- simpler and reliable. Feeds "which hours are
+// thinnest/busiest" questions with exact per-slot counts to reason over.
+function toMin(hhmm) {
+  return parseInt(hhmm.slice(0, 2), 10) * 60 + parseInt(hhmm.slice(3, 5), 10);
+}
+
+export async function coverageBySlot(env, eventId, day, slotMin = 30) {
+  const { results } = await env.DB
+    .prepare('SELECT start_time, end_time FROM shifts WHERE event_id = ? AND day = ?')
+    .bind(eventId, day)
+    .all();
+  if (!results.length) return [];
+  const spans = results.map((r) => [toMin(r.start_time), toMin(r.end_time)]);
+  const lo = Math.min(...spans.map((s) => s[0]));
+  const hi = Math.max(...spans.map((s) => s[1]));
+  const out = [];
+  for (let v = lo; v < hi; v += slotMin) {
+    const slot = `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
+    out.push({ slot, headcount: spans.filter(([s, e]) => s <= v && e > v).length });
+  }
+  return out;
+}
+
+// Re-reads rows by id and verifies the given fields still match -- generalises
+// the station-only drift check to any column set (times, station).
+async function verifyShiftsUnchanged(env, ids, expected) {
+  const placeholders = ids.map(() => '?').join(',');
+  const { results } = await env.DB
+    .prepare(`SELECT id, station, start_time, end_time FROM shifts WHERE id IN (${placeholders}) ORDER BY id`)
+    .bind(...ids)
+    .all();
+  if (results.length !== ids.length) return false;
+  const byId = new Map(results.map((r) => [r.id, r]));
+  return ids.every((id, i) => {
+    const cur = byId.get(id);
+    return cur && Object.keys(expected[i]).every((k) => cur[k] === expected[i][k]);
+  });
+}
+
 // Re-reads the exact rows by id and verifies they still hold the station the
 // diff was built from -- so a confirm can't apply against drifted data.
 async function verifyUnchanged(env, ids, expected) {
@@ -170,6 +307,35 @@ export async function applyPending(env, pending) {
     await setStations(env, pending.idsA, pending.stationB);
     await setStations(env, pending.idsB, pending.stationA);
     return { updates: pending.idsA.length + pending.idsB.length };
+  }
+  if (pending.type === 'add_shift') {
+    const r = pending.row;
+    // Idempotency guard: a retried/replayed confirm must not double-insert.
+    const dupe = await env.DB
+      .prepare(`SELECT id FROM shifts WHERE event_id=? AND staff_name=? AND day=?
+                AND start_time=? AND end_time=? AND station=?`)
+      .bind(r.event_id, r.staff_name, r.day, r.start_time, r.end_time, r.station)
+      .first();
+    if (dupe) return { duplicate: true };
+    await env.DB.prepare(`INSERT INTO shifts
+      (event_id, staff_name, day, date, start_time, end_time, station, is_floater, group_name)
+      VALUES (?,?,?,?,?,?,?,?,?)`)
+      .bind(r.event_id, r.staff_name, r.day, r.date, r.start_time, r.end_time, r.station, r.is_floater, null)
+      .run();
+    return { updates: 1 };
+  }
+  if (pending.type === 'cancel_shift') {
+    if (!(await verifyShiftsUnchanged(env, pending.ids, pending.expect))) return { drift: true };
+    const placeholders = pending.ids.map(() => '?').join(',');
+    await env.DB.prepare(`DELETE FROM shifts WHERE id IN (${placeholders})`).bind(...pending.ids).run();
+    return { updates: pending.ids.length };
+  }
+  if (pending.type === 'edit_shift_time') {
+    if (!(await verifyShiftsUnchanged(env, pending.ids, pending.expect))) return { drift: true };
+    await env.DB.prepare('UPDATE shifts SET start_time = ?, end_time = ? WHERE id = ?')
+      .bind(pending.new_start_time, pending.new_end_time, pending.ids[0])
+      .run();
+    return { updates: 1 };
   }
   return { error: true };
 }

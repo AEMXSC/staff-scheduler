@@ -5,6 +5,7 @@ import { callAzureOpenAI, buildTools } from './openai.js';
 import {
   getSchedule, distinctDays, isReadOnlySelect, runReadOnly,
   planReassign, planSwap, applyPending,
+  planAddShift, planCancelShift, planEditShiftTime, coverageBySlot,
   replaceSchedule, getContacts, replaceContacts,
 } from './db.js';
 
@@ -65,7 +66,12 @@ function systemPrompt(days, digest, fullDump) {
     + 'now/next", map the current Amsterdam date to that weekday and compare local times; if today is outside '
     + 'the event window, say so rather than guessing.\n\n'
     + `Dataset digest: ${digest}\n\n`
-    + 'To change the schedule, call reassign_station or swap_people -- you never write directly, a human confirms.\n'
+    + 'To change the schedule use the write tools -- reassign_station, swap_people, add_shift, cancel_shift, '
+    + 'edit_shift_time -- you never write directly, a human confirms each proposal. When a person has several '
+    + 'shifts that day, pass station and/or start_time so the right one is targeted. '
+    + 'Changing HOURS/TIMES -> edit_shift_time; changing the STATION/role -> reassign_station.\n'
+    + 'For "which hours/slots are thinnest or busiest on the floor", call coverage_by_slot(day) and reason over '
+    + 'the per-slot headcounts it returns.\n'
     + 'In your final answer, state counts/numbers verbatim from the query result (row_count is exact even when rows are truncated); '
     + 'for long lists, point to the table shown rather than retyping every name. Keep replies to 1-3 sentences.';
   if (fullDump) {
@@ -117,6 +123,10 @@ function resultResponse(rows) {
   });
 }
 
+const WRITE_TOOLS = new Set([
+  'reassign_station', 'swap_people', 'add_shift', 'cancel_shift', 'edit_shift_time',
+]);
+
 // A proposed write is terminal for the turn: build the diff, hand it to the
 // frontend's Confirm/Cancel, never touch the loop.
 async function proposeWrite(env, eventId, name, args) {
@@ -126,6 +136,38 @@ async function proposeWrite(env, eventId, name, args) {
     if (plan.ambiguous) return json({ message: `"${args.staff_name}" matches multiple people (${plan.ambiguous.join(', ')}) — use a full name.` });
     return json({
       message: `Proposed: move ${args.staff_name} to ${args.new_station} on ${args.day}. Confirm to apply.`,
+      table: plan.table,
+      pendingAction: plan.pending,
+    });
+  }
+  if (name === 'add_shift') {
+    const plan = await planAddShift(env, eventId, args);
+    if (plan.badTime) return json({ message: 'Times must be 24-hour HH:MM (e.g. 14:30).' });
+    return json({
+      message: `Proposed: add ${args.staff_name} to ${args.station} on ${args.day} ${args.start_time}–${args.end_time}. Confirm to apply.`,
+      table: plan.table,
+      pendingAction: plan.pending,
+    });
+  }
+  if (name === 'cancel_shift') {
+    const plan = await planCancelShift(env, eventId, args);
+    if (plan.error) return json({ message: `Couldn't find a shift for ${args.staff_name} on ${args.day}.` });
+    if (plan.ambiguous) return json({ message: `"${args.staff_name}" matches multiple people (${plan.ambiguous.join(', ')}) — use a full name.` });
+    if (plan.manyShifts) return json({ message: `${args.staff_name} has several shifts on ${args.day} (${plan.manyShifts.join('; ')}) — say which station or start time to cancel.` });
+    return json({
+      message: `Proposed: remove ${args.staff_name}'s ${args.day} shift. Confirm to apply.`,
+      table: plan.table,
+      pendingAction: plan.pending,
+    });
+  }
+  if (name === 'edit_shift_time') {
+    const plan = await planEditShiftTime(env, eventId, args);
+    if (plan.badTime) return json({ message: 'New times must be 24-hour HH:MM (e.g. 14:30).' });
+    if (plan.error) return json({ message: `Couldn't find a shift for ${args.staff_name} on ${args.day}.` });
+    if (plan.ambiguous) return json({ message: `"${args.staff_name}" matches multiple people (${plan.ambiguous.join(', ')}) — use a full name.` });
+    if (plan.manyShifts) return json({ message: `${args.staff_name} has several shifts on ${args.day} (${plan.manyShifts.join('; ')}) — say which one to change.` });
+    return json({
+      message: `Proposed: change ${args.staff_name}'s ${args.day} shift to ${args.new_start_time}–${args.new_end_time}. Confirm to apply.`,
       table: plan.table,
       pendingAction: plan.pending,
     });
@@ -183,30 +225,34 @@ async function handleChat(request, env) {
       return finalAnswer(aiMsg?.content || "I didn't understand that.", lastRows);
     }
 
-    const write = toolCalls.find((t) => t.function.name === 'reassign_station' || t.function.name === 'swap_people');
+    const write = toolCalls.find((t) => WRITE_TOOLS.has(t.function.name));
     if (write) {
-      return proposeWrite(env, eventId, write.function.name, JSON.parse(write.function.arguments || '{}'));
+      let wargs;
+      try { wargs = JSON.parse(write.function.arguments || '{}'); } catch { return json({ message: 'I mis-formed that change — please rephrase it.' }); }
+      return proposeWrite(env, eventId, write.function.name, wargs);
     }
 
-    // Run every run_sql call and feed each result back keyed by tool_call_id.
+    // Run every read call and feed each result back keyed by tool_call_id.
     convo.push(aiMsg);
     for (const tc of toolCalls) {
       let content;
-      if (tc.function.name === 'run_sql') {
-        const a = JSON.parse(tc.function.arguments || '{}');
-        if (!isReadOnlySelect(a.sql || '')) {
-          content = 'BLOCKED: only read-only SELECT queries are allowed.';
-        } else {
-          try {
-            const rows = await runReadOnly(env, a.sql);
-            lastRows = rows;
-            content = JSON.stringify({ row_count: rows.length, rows: rows.slice(0, TOOL_ROWS_CAP) });
-          } catch (e) {
-            content = `ERROR: ${e.message}`;
+      const a = JSON.parse(tc.function.arguments || '{}');
+      try {
+        if (tc.function.name === 'run_sql') {
+          if (!isReadOnlySelect(a.sql || '')) {
+            content = 'BLOCKED: only read-only SELECT queries are allowed.';
+          } else {
+            lastRows = await runReadOnly(env, a.sql);
+            content = JSON.stringify({ row_count: lastRows.length, rows: lastRows.slice(0, TOOL_ROWS_CAP) });
           }
+        } else if (tc.function.name === 'coverage_by_slot') {
+          lastRows = await coverageBySlot(env, eventId, a.day);
+          content = JSON.stringify({ row_count: lastRows.length, rows: lastRows.slice(0, TOOL_ROWS_CAP) });
+        } else {
+          content = `ERROR: unknown tool ${tc.function.name}`;
         }
-      } else {
-        content = `ERROR: unknown tool ${tc.function.name}`;
+      } catch (e) {
+        content = `ERROR: ${e.message}`;
       }
       convo.push({ role: 'tool', tool_call_id: tc.id, content });
     }
@@ -224,6 +270,7 @@ async function handleConfirm(request, env) {
 
   const result = await applyPending(env, pendingAction);
   if (result.drift) return json({ error: 'Those rows changed since this was proposed — re-run the request.' }, 409);
+  if (result.duplicate) return json({ error: 'That shift already exists — nothing was added.' }, 409);
   if (result.error) return json({ error: 'Unknown action' }, 400);
   return json({ message: `Applied — ${result.updates} row(s) updated.`, updates: result.updates });
 }
