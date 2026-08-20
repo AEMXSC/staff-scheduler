@@ -1,3 +1,6 @@
+import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
+import { convertGrid } from './grid-convert.js';
+
 const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
 const SESSION_KEY = 'staff-scheduler-admin-token';
 
@@ -20,6 +23,17 @@ root.innerHTML = `
     </div>
     <p class="hint" id="admin-auth-hint"></p>
   </div>
+  <div class="admin-tools" id="admin-tools" hidden>
+    <div class="admin-tool">
+      <label class="admin-tool-label" for="upload-schedule">Master schedule (.xlsx) — rebuilds the schedule</label>
+      <input type="file" id="upload-schedule" class="admin-file" accept=".xlsx,.xls">
+    </div>
+    <div class="admin-tool">
+      <label class="admin-tool-label" for="upload-contacts">Contacts (.xlsx) — rebuilds the directory</label>
+      <input type="file" id="upload-contacts" class="admin-file" accept=".xlsx,.xls">
+    </div>
+    <p class="admin-tool-status" id="admin-tool-status"></p>
+  </div>
   <div class="admin-chat" id="admin-chat" hidden>
     <div class="admin-messages" id="admin-messages"></div>
     <div class="admin-input-bar">
@@ -36,6 +50,10 @@ const chatEl = document.getElementById('admin-chat');
 const messagesEl = document.getElementById('admin-messages');
 const textarea = document.getElementById('admin-textarea');
 const sendBtn = document.getElementById('admin-send');
+const toolsEl = document.getElementById('admin-tools');
+const scheduleInput = document.getElementById('upload-schedule');
+const contactsInput = document.getElementById('upload-contacts');
+const toolStatus = document.getElementById('admin-tool-status');
 
 let token = '';
 try { token = sessionStorage.getItem(SESSION_KEY) || ''; } catch { /* noop */ }
@@ -47,6 +65,7 @@ let history = [];
 
 function showChat() {
   authEl.hidden = true;
+  toolsEl.hidden = false;
   chatEl.hidden = false;
   textarea.focus();
 }
@@ -223,3 +242,93 @@ textarea.addEventListener('keydown', (e) => {
   }
 });
 sendBtn.addEventListener('click', send);
+
+// --- admin uploads: xlsx parsed in-browser, posted as flat rows ---
+
+function setStatus(msg, kind) {
+  toolStatus.textContent = msg;
+  toolStatus.dataset.kind = kind || '';
+}
+
+async function readWorkbook(file) {
+  const buf = await file.arrayBuffer();
+  return XLSX.read(buf, { type: 'array' });
+}
+
+// Case-insensitive column pick from a header-keyed row object.
+function pick(row, candidates) {
+  const lower = {};
+  Object.keys(row).forEach((k) => { lower[k.toLowerCase().trim()] = row[k]; });
+  for (const c of candidates) {
+    const v = lower[c];
+    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+  }
+  return null;
+}
+
+async function uploadSchedule(file) {
+  // Destructive: replaces the whole event schedule. Confirm before parsing.
+  if (!window.confirm(`This replaces the ENTIRE schedule for "${eventId}". Continue?`)) return;
+  setStatus(`Reading ${file.name}…`);
+  try {
+    const wb = await readWorkbook(file);
+    const sheetsMap = {};
+    wb.SheetNames.forEach((n) => {
+      sheetsMap[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '', raw: false, blankrows: true });
+    });
+    const { rows, warnings } = convertGrid(sheetsMap);
+    if (!rows.length) { setStatus('No shift rows found — check the sheet layout (day tabs, header row).', 'err'); return; }
+    setStatus(`Uploading ${rows.length} shifts…`);
+    const resp = await fetch('/api/admin/schedule-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ eventId, rows }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) { setStatus(`⚠ ${data.error || 'Upload failed.'}`, 'err'); return; }
+    const warnNote = warnings.length ? ` — ${warnings.length} warning${warnings.length === 1 ? '' : 's'}` : '';
+    setStatus(`✓ ${data.message}${warnNote}`, 'ok');
+    addMessage('ai', `✓ ${data.message}${warnings.length ? `\n- ${warnings.join('\n- ')}` : ''}`);
+  } catch (e) {
+    setStatus(`⚠ Could not read that file: ${e.message}`, 'err');
+  }
+}
+
+async function uploadContacts(file) {
+  setStatus(`Reading ${file.name}…`);
+  try {
+    const wb = await readWorkbook(file);
+    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false });
+    const rows = raw.map((r) => ({
+      name: pick(r, ['name', 'full name', 'staff', 'staff name']),
+      email: pick(r, ['email', 'e-mail', 'email address']),
+      phone: pick(r, ['phone', 'phone number', 'mobile', 'cell', 'cell phone']),
+      slack: pick(r, ['slack', 'slack handle', 'slack id']),
+      whatsapp: pick(r, ['whatsapp', 'whats app', 'wa']),
+    })).filter((r) => r.name);
+    if (!rows.length) { setStatus('No named contacts found — need a "Name" column.', 'err'); return; }
+    setStatus(`Uploading ${rows.length} contacts…`);
+    const resp = await fetch('/api/admin/contacts-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ eventId, rows }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) { setStatus(`⚠ ${data.error || 'Upload failed.'}`, 'err'); return; }
+    setStatus(`✓ ${data.message}`, 'ok');
+    addMessage('ai', `✓ ${data.message}`);
+  } catch (e) {
+    setStatus(`⚠ Could not read that file: ${e.message}`, 'err');
+  }
+}
+
+scheduleInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) uploadSchedule(file);
+  e.target.value = '';
+});
+contactsInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) uploadContacts(file);
+  e.target.value = '';
+});

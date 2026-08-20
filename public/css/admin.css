@@ -21,6 +21,24 @@
 }
 .admin-unlock-btn:disabled { opacity: 0.6; cursor: default; }
 
+.admin-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.admin-tool { display: flex; flex-direction: column; gap: 6px; }
+.admin-tool-label { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+.admin-file { font-size: 13px; font-family: inherit; color: var(--text); max-width: 260px; }
+.admin-tool-status { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--text-dim); white-space: pre-wrap; }
+.admin-tool-status[data-kind="ok"] { color: #2d9d78; }
+.admin-tool-status[data-kind="err"] { color: var(--accent); }
+
 .admin-chat {
   display: flex;
   flex-direction: column;

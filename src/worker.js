@@ -50,7 +50,11 @@ function systemPrompt(days, digest, fullDump) {
     + '- is_floater: 1 = backup/floater, 0 = primary\n'
     + '- station is the demo/role (e.g. "Premiere Pro", "Info Counter"); use LIKE for partial matches\n'
     + '- the primary key is the id column -- use it (NOT rowid, which is unavailable) for self-joins or de-duping\n'
-    + '- when the question asks WHO / WHICH PEOPLE, SELECT DISTINCT staff_name so each person is counted once\n\n'
+    + '- when the question asks WHO / WHICH PEOPLE, SELECT DISTINCT staff_name so each person is counted once\n'
+    + '- shift duration in minutes is EXACTLY: '
+    + '(CAST(substr(end_time,1,2) AS INTEGER)*60 + CAST(substr(end_time,4,2) AS INTEGER)) '
+    + '- (CAST(substr(start_time,1,2) AS INTEGER)*60 + CAST(substr(start_time,4,2) AS INTEGER)) '
+    + '-- use this expression for any duration/length/longer-than question\n\n'
     + `Dataset digest: ${digest}\n\n`
     + 'To change the schedule, call reassign_station or swap_people -- you never write directly, a human confirms.\n'
     + 'In your final answer, state counts/numbers verbatim from the query result (row_count is exact even when rows are truncated); '
