@@ -15,6 +15,56 @@ export function distinctDays(schedule) {
   return [...new Set(schedule.map((r) => r.day))];
 }
 
+// --- bulk replace (admin uploads) ---
+const MAX_UPLOAD_ROWS = 5000;
+
+export async function replaceSchedule(env, eventId, rows) {
+  if (!Array.isArray(rows) || !rows.length) return { error: 'No rows.' };
+  if (rows.length > MAX_UPLOAD_ROWS) return { error: `Too many rows (max ${MAX_UPLOAD_ROWS}).` };
+  const clean = [];
+  for (const r of rows) {
+    if (!r.staff_name || !r.day || !r.start_time || !r.end_time || !r.station) {
+      return { error: 'A row is missing required fields (name, day, start, end, station).' };
+    }
+    clean.push([eventId, `${r.staff_name}`, `${r.day}`, r.date ? `${r.date}` : null,
+      `${r.start_time}`, `${r.end_time}`, `${r.station}`, r.is_floater ? 1 : 0,
+      r.group ? `${r.group}` : null]);
+  }
+  const insert = env.DB.prepare(`INSERT INTO shifts
+    (event_id, staff_name, day, date, start_time, end_time, station, is_floater, group_name)
+    VALUES (?,?,?,?,?,?,?,?,?)`);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM shifts WHERE event_id = ?').bind(eventId),
+    ...clean.map((c) => insert.bind(...c)),
+  ]);
+  return { inserted: clean.length };
+}
+
+export async function getContacts(env, eventId) {
+  const { results } = await env.DB
+    .prepare('SELECT name, email, phone, slack, whatsapp FROM contacts WHERE event_id = ? ORDER BY name')
+    .bind(eventId)
+    .all();
+  return results;
+}
+
+export async function replaceContacts(env, eventId, rows) {
+  if (!Array.isArray(rows) || !rows.length) return { error: 'No rows.' };
+  if (rows.length > MAX_UPLOAD_ROWS) return { error: `Too many rows (max ${MAX_UPLOAD_ROWS}).` };
+  const clean = [];
+  for (const r of rows) {
+    if (!r.name) return { error: 'A contact row is missing a name.' };
+    clean.push([eventId, `${r.name}`, r.email ? `${r.email}` : null, r.phone ? `${r.phone}` : null,
+      r.slack ? `${r.slack}` : null, r.whatsapp ? `${r.whatsapp}` : null]);
+  }
+  const insert = env.DB.prepare('INSERT INTO contacts (event_id, name, email, phone, slack, whatsapp) VALUES (?,?,?,?,?,?)');
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM contacts WHERE event_id = ?').bind(eventId),
+    ...clean.map((c) => insert.bind(...c)),
+  ]);
+  return { inserted: clean.length };
+}
+
 // --- read-only SQL guard for AI-authored queries ---
 // The model composes a SELECT; this makes it structurally impossible for
 // that SELECT to mutate anything before it reaches D1.
