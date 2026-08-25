@@ -2,6 +2,41 @@ import {
   getZonedNow, toMins, fmt12, escapeHtml,
 } from './time-utils.js';
 
+// Fixed product order for the "Who's On Now" station grid (was alphabetical).
+const STATION_ORDER = [
+  'Premiere (Color)', 'Premiere (Generative Workflows)', 'Premiere (AI Audio)',
+  'After Effects', 'Photoshop', 'Substance', 'Stock', 'Firefly + Video',
+  'AI Assistant', 'Frame.io 1', 'Frame.io 2', 'Frame.io 3',
+  'Firefly Enterprise (Meeting Room Lobby)',
+];
+// Coarse / case / variant labels (Sat-Sun-Mon tabs + older data) map to the
+// slot they should sort as. Granular labels exist only on Friday. Every value
+// here must also appear in STATION_ORDER above, or the alias sorts to the end.
+const STATION_ALIASES = {
+  'premiere (color)': 'Premiere (Color)',
+  'premiere pro': 'Premiere (Color)',
+  'premiere (ai - gen media & audio)': 'Premiere (Generative Workflows)',
+  'frame.io': 'Frame.io 1',
+  'firefly e': 'Firefly Enterprise (Meeting Room Lobby)',
+  'firefly e (mr)': 'Firefly Enterprise (Meeting Room Lobby)',
+};
+// Index into STATION_ORDER; unknown stations (Info Counter, data quirks) sort
+// to the end, then alphabetically via the comparator's tiebreak.
+function stationOrderIndex(station) {
+  const key = String(station).trim().toLowerCase();
+  const canonical = STATION_ALIASES[key] || STATION_ORDER.find((s) => s.toLowerCase() === key);
+  const i = canonical ? STATION_ORDER.indexOf(canonical) : -1;
+  return i === -1 ? STATION_ORDER.length : i;
+}
+// Display-only prettification, casing-fixes ONLY (e.g. sheet says "Premiere
+// (COLOR)"). By design we do NOT unify the coarse Sat-Sun-Mon labels (Premiere
+// Pro, Frame.io, Firefly E) to the granular Friday names -- those are shown
+// verbatim as the source sheet has them; only their sort position is aliased.
+const STATION_LABELS = { 'premiere (color)': 'Premiere (Color)' };
+function displayStation(station) {
+  return STATION_LABELS[String(station).trim().toLowerCase()] || station;
+}
+
 // Rows have arbitrary-length spans (e.g. "10:15-14:30"), not uniform slots,
 // so the slot grid for "Who's On Now" is built from every distinct
 // start/end boundary that appears in the day's data.
@@ -118,9 +153,10 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     byStation.get(r.station).push(r);
   });
 
-  const stationCards = [...byStation.entries()].sort(([a], [b]) => a.localeCompare(b)).map(
+  const stationCards = [...byStation.entries()]
+    .sort(([a], [b]) => (stationOrderIndex(a) - stationOrderIndex(b)) || a.localeCompare(b)).map(
     ([station, rows]) => `<div class="station-card">
-      <div class="station-name">${escapeHtml(station)}</div>
+      <div class="station-name">${escapeHtml(displayStation(station))}</div>
       <div class="station-people">${rows.map((r) => `<button class="chip chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</button>`).join('')}</div>
     </div>`,
   ).join('');

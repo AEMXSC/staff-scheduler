@@ -5,7 +5,7 @@
     "date": "2026-09-11",
     "start_time": "10:15",
     "end_time": "14:30",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -15,7 +15,7 @@
     "date": "2026-09-11",
     "start_time": "14:30",
     "end_time": "18:15",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -25,7 +25,7 @@
     "date": "2026-09-11",
     "start_time": "10:15",
     "end_time": "14:30",
-    "station": "Premiere Pro",
+    "station": "Premiere (Generative Workflows)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -35,7 +35,7 @@
     "date": "2026-09-11",
     "start_time": "14:30",
     "end_time": "18:15",
-    "station": "Premiere Pro",
+    "station": "Premiere (Generative Workflows)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -45,7 +45,7 @@
     "date": "2026-09-11",
     "start_time": "10:15",
     "end_time": "14:30",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (AI Audio)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -55,7 +55,7 @@
     "date": "2026-09-11",
     "start_time": "14:30",
     "end_time": "18:15",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (AI Audio)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -165,7 +165,7 @@
     "date": "2026-09-11",
     "start_time": "14:30",
     "end_time": "18:15",
-    "station": "Firefly E (MR)",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -175,7 +175,7 @@
     "date": "2026-09-11",
     "start_time": "10:15",
     "end_time": "14:30",
-    "station": "Firefly E (MR)",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -200,67 +200,67 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 1",
+    "staff_name": "Aaron Burns",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "10:15",
     "end_time": "14:30",
-    "station": "Frame.io",
+    "station": "Frame.io 1",
     "is_floater": false,
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 2",
+    "staff_name": "Akene Farmer-Michos",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "14:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 1",
     "is_floater": false,
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 3",
+    "staff_name": "Deanna Cossio",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "10:15",
     "end_time": "14:30",
-    "station": "Frame.io",
+    "station": "Frame.io 2",
     "is_floater": false,
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 4",
+    "staff_name": "Rosie Cunningham",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "14:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 2",
     "is_floater": false,
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 5",
+    "staff_name": "Robert Loughlin",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "10:15",
     "end_time": "14:30",
-    "station": "Frame.io",
+    "station": "Frame.io 3",
     "is_floater": false,
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "Derek Johnson",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "14:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 3",
     "is_floater": false,
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "Olivia Skopas",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "14:30",
@@ -270,7 +270,7 @@
     "group": "ATE Floaters"
   },
   {
-    "staff_name": "Frame person 7",
+    "staff_name": "Devon Hopkins",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "10:15",
@@ -640,7 +640,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 1",
+    "staff_name": "Aaron Burns",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "13:30",
@@ -650,7 +650,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 2",
+    "staff_name": "Akene Farmer-Michos",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "09:15",
@@ -660,7 +660,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 3",
+    "staff_name": "Deanna Cossio",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "13:30",
@@ -670,7 +670,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 4",
+    "staff_name": "Rosie Cunningham",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "09:15",
@@ -680,7 +680,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 5",
+    "staff_name": "Robert Loughlin",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "13:30",
@@ -690,7 +690,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "Derek Johnson",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "09:15",
@@ -700,7 +700,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "Sarah Pontius",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "09:15",
@@ -710,7 +710,7 @@
     "group": "ATE Floaters"
   },
   {
-    "staff_name": "Frame person 7",
+    "staff_name": "JJ Powell",
     "day": "Saturday",
     "date": "2026-09-12",
     "start_time": "13:30",
@@ -1120,7 +1120,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 1",
+    "staff_name": "Aaron Burns",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "09:15",
@@ -1130,7 +1130,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 2",
+    "staff_name": "Akene Farmer-Michos",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "13:30",
@@ -1140,7 +1140,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 3",
+    "staff_name": "Deanna Cossio",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "09:15",
@@ -1150,7 +1150,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 4",
+    "staff_name": "Rosie Cunningham",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "13:30",
@@ -1160,7 +1160,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 5",
+    "staff_name": "Robert Loughlin",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "09:15",
@@ -1170,7 +1170,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "Derek Johnson",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "13:30",
@@ -1180,7 +1180,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "Devon Hopkins",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "13:30",
@@ -1190,7 +1190,7 @@
     "group": "ATE Floaters"
   },
   {
-    "staff_name": "Frame person 7",
+    "staff_name": "Olivia Skopas",
     "day": "Sunday",
     "date": "2026-09-13",
     "start_time": "09:15",
@@ -1570,7 +1570,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 1",
+    "staff_name": "Aaron Burns",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "12:30",
@@ -1580,7 +1580,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 2",
+    "staff_name": "Akene Farmer-Michos",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "09:15",
@@ -1590,7 +1590,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 3",
+    "staff_name": "Deanna Cossio",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "12:30",
@@ -1600,7 +1600,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 4",
+    "staff_name": "Rosie Cunningham",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "09:15",
@@ -1610,7 +1610,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 5",
+    "staff_name": "Robert Loughlin",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "12:30",
@@ -1620,7 +1620,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "Derek Johnson",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "09:15",
@@ -1630,7 +1630,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Frame person 6",
+    "staff_name": "JJ Powell",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "09:15",
@@ -1640,7 +1640,7 @@
     "group": "ATE Floaters"
   },
   {
-    "staff_name": "Frame person 7",
+    "staff_name": "Sarah Pontius",
     "day": "Monday",
     "date": "2026-09-14",
     "start_time": "12:30",
