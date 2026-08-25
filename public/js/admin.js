@@ -299,14 +299,23 @@ async function uploadContacts(file) {
   try {
     const wb = await readWorkbook(file);
     const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false });
-    const rows = raw.map((r) => ({
-      name: pick(r, ['name', 'full name', 'staff', 'staff name']),
-      email: pick(r, ['email', 'e-mail', 'email address']),
-      phone: pick(r, ['phone', 'phone number', 'mobile', 'cell', 'cell phone']),
-      slack: pick(r, ['slack', 'slack handle', 'slack id']),
-      whatsapp: pick(r, ['whatsapp', 'whats app', 'wa']),
-    })).filter((r) => r.name);
-    if (!rows.length) { setStatus('No named contacts found — need a "Name" column.', 'err'); return; }
+    const rows = raw.map((r) => {
+      // Accept either a single "Name" column or split First/Last columns.
+      const first = pick(r, ['first name', 'first', 'given name']);
+      const last = pick(r, ['last name', 'last', 'surname', 'family name']);
+      const name = pick(r, ['name', 'full name', 'staff', 'staff name'])
+        || [first, last].filter(Boolean).join(' ') || null;
+      return {
+        name,
+        email: pick(r, ['email', 'e-mail', 'email address']),
+        phone: pick(r, ['phone', 'phone number', 'mobile', 'cell', 'cell phone']),
+        slack: pick(r, ['slack', 'slack handle', 'slack id']),
+        whatsapp: pick(r, ['whatsapp', 'whats app', 'wa']),
+        title: pick(r, ['title', 'title for badge', 'badge title', 'role']),
+        manager: pick(r, ['manager', 'manager name', 'reports to']),
+      };
+    }).filter((r) => r.name);
+    if (!rows.length) { setStatus('No named contacts found — need a "Name" column, or First/Last name columns.', 'err'); return; }
     setStatus(`Uploading ${rows.length} contacts…`);
     const resp = await fetch('/api/admin/contacts-upload', {
       method: 'POST',

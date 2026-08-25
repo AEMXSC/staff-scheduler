@@ -55,7 +55,7 @@ export async function replaceSchedule(env, eventId, rows) {
 
 export async function getContacts(env, eventId) {
   const { results } = await env.DB
-    .prepare('SELECT name, email, phone, slack, whatsapp FROM contacts WHERE event_id = ? ORDER BY name')
+    .prepare('SELECT name, email, phone, slack, whatsapp, title, manager FROM contacts WHERE event_id = ? ORDER BY name')
     .bind(eventId)
     .all();
   return results;
@@ -64,13 +64,13 @@ export async function getContacts(env, eventId) {
 export async function replaceContacts(env, eventId, rows) {
   if (!Array.isArray(rows) || !rows.length) return { error: 'No rows.' };
   if (rows.length > MAX_UPLOAD_ROWS) return { error: `Too many rows (max ${MAX_UPLOAD_ROWS}).` };
+  const s = (v) => (v ? `${v}` : null);
   const clean = [];
   for (const r of rows) {
     if (!r.name) return { error: 'A contact row is missing a name.' };
-    clean.push([eventId, `${r.name}`, r.email ? `${r.email}` : null, r.phone ? `${r.phone}` : null,
-      r.slack ? `${r.slack}` : null, r.whatsapp ? `${r.whatsapp}` : null]);
+    clean.push([eventId, `${r.name}`, s(r.email), s(r.phone), s(r.slack), s(r.whatsapp), s(r.title), s(r.manager)]);
   }
-  const insert = env.DB.prepare('INSERT INTO contacts (event_id, name, email, phone, slack, whatsapp) VALUES (?,?,?,?,?,?)');
+  const insert = env.DB.prepare('INSERT INTO contacts (event_id, name, email, phone, slack, whatsapp, title, manager) VALUES (?,?,?,?,?,?,?,?)');
   await env.DB.batch([
     env.DB.prepare('DELETE FROM contacts WHERE event_id = ?').bind(eventId),
     ...clean.map((c) => insert.bind(...c)),

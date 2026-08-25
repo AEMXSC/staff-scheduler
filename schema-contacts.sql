@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS contacts (
   email     TEXT,
   phone     TEXT,
   slack     TEXT,
-  whatsapp  TEXT
+  whatsapp  TEXT,
+  title     TEXT,
+  manager   TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_contacts_event ON contacts(event_id);
