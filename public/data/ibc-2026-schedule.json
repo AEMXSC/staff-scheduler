@@ -30,7 +30,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Annika Koenig",
+    "staff_name": "Kerstin Ebert",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "14:30",
@@ -50,7 +50,7 @@
     "group": "Demo Artists"
   },
   {
-    "staff_name": "Kerstin Ebert",
+    "staff_name": "Adolfo Hernandez Santisteban",
     "day": "Friday",
     "date": "2026-09-11",
     "start_time": "14:30",
@@ -445,7 +445,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -455,7 +455,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -465,27 +465,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Premiere Pro",
-    "is_floater": false,
-    "group": "Demo Artists"
-  },
-  {
-    "staff_name": "Annika Koenig",
-    "day": "Saturday",
-    "date": "2026-09-12",
-    "start_time": "09:15",
-    "end_time": "13:30",
-    "station": "Premiere Pro",
-    "is_floater": false,
-    "group": "Demo Artists"
-  },
-  {
-    "staff_name": "Umang Mital",
-    "day": "Saturday",
-    "date": "2026-09-12",
-    "start_time": "13:30",
-    "end_time": "18:15",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (Generative Workflows)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -495,7 +475,27 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (Generative Workflows)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Umang Mital",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere (AI Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Adolfo Hernandez Santisteban",
+    "day": "Saturday",
+    "date": "2026-09-12",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere (AI Audio)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -605,7 +605,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Firefly E",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -615,7 +615,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Firefly E",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -645,7 +645,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 1",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -655,7 +655,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Frame.io",
+    "station": "Frame.io 1",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -665,7 +665,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 2",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -675,7 +675,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Frame.io",
+    "station": "Frame.io 2",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -685,7 +685,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 3",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -695,7 +695,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Frame.io",
+    "station": "Frame.io 3",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -723,8 +723,8 @@
     "staff_name": "Sameera Polipalli",
     "day": "Saturday",
     "date": "2026-09-12",
-    "start_time": "13:30",
-    "end_time": "18:15",
+    "start_time": "09:15",
+    "end_time": "13:30",
     "station": "Stock Floater",
     "is_floater": true,
     "group": "ATE Floaters"
@@ -733,8 +733,8 @@
     "staff_name": "Angela Jew",
     "day": "Saturday",
     "date": "2026-09-12",
-    "start_time": "09:15",
-    "end_time": "13:30",
+    "start_time": "13:30",
+    "end_time": "18:15",
     "station": "Stock Floater",
     "is_floater": true,
     "group": "ATE Floaters"
@@ -745,7 +745,7 @@
     "date": "2026-09-12",
     "start_time": "12:00",
     "end_time": "16:30",
-    "station": "PS Floater",
+    "station": "Photoshop Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -755,7 +755,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -765,7 +765,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -775,7 +775,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -785,7 +785,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -795,7 +795,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -805,7 +805,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -815,7 +815,7 @@
     "date": "2026-09-12",
     "start_time": "13:30",
     "end_time": "18:00",
-    "station": "AE Floater",
+    "station": "After Effects Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -825,7 +825,7 @@
     "date": "2026-09-12",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "AE Floater",
+    "station": "After Effects Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -895,7 +895,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -905,7 +905,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -915,27 +915,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Premiere Pro",
-    "is_floater": false,
-    "group": "Demo Artists"
-  },
-  {
-    "staff_name": "Annika Koenig",
-    "day": "Sunday",
-    "date": "2026-09-13",
-    "start_time": "13:30",
-    "end_time": "18:15",
-    "station": "Premiere Pro",
-    "is_floater": false,
-    "group": "Demo Artists"
-  },
-  {
-    "staff_name": "Umang Mital",
-    "day": "Sunday",
-    "date": "2026-09-13",
-    "start_time": "09:15",
-    "end_time": "13:30",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (Generative Workflows)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -945,7 +925,27 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (Generative Workflows)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Umang Mital",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "09:15",
+    "end_time": "13:30",
+    "station": "Premiere (AI Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Adolfo Hernandez Santisteban",
+    "day": "Sunday",
+    "date": "2026-09-13",
+    "start_time": "13:30",
+    "end_time": "18:15",
+    "station": "Premiere (AI Audio)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1055,7 +1055,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Firefly E",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1065,7 +1065,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Firefly E",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1085,7 +1085,7 @@
     "date": "2026-09-13",
     "start_time": "11:00",
     "end_time": "13:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "Demo Artists"
   },
@@ -1095,7 +1095,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "16:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "Demo Artists"
   },
@@ -1125,7 +1125,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Frame.io",
+    "station": "Frame.io 1",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1135,7 +1135,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 1",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1145,7 +1145,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Frame.io",
+    "station": "Frame.io 2",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1155,7 +1155,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 2",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1165,7 +1165,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "Frame.io",
+    "station": "Frame.io 3",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1175,7 +1175,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "Frame.io",
+    "station": "Frame.io 3",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1203,8 +1203,8 @@
     "staff_name": "Sameera Polipalli",
     "day": "Sunday",
     "date": "2026-09-13",
-    "start_time": "09:15",
-    "end_time": "13:30",
+    "start_time": "13:30",
+    "end_time": "18:15",
     "station": "Stock Floater",
     "is_floater": true,
     "group": "ATE Floaters"
@@ -1213,8 +1213,8 @@
     "staff_name": "Angela Jew",
     "day": "Sunday",
     "date": "2026-09-13",
-    "start_time": "13:30",
-    "end_time": "18:15",
+    "start_time": "09:15",
+    "end_time": "13:30",
     "station": "Stock Floater",
     "is_floater": true,
     "group": "ATE Floaters"
@@ -1225,7 +1225,7 @@
     "date": "2026-09-13",
     "start_time": "11:30",
     "end_time": "16:00",
-    "station": "PS Floater",
+    "station": "Photoshop Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1235,7 +1235,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1245,7 +1245,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1255,7 +1255,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1265,7 +1265,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1285,7 +1285,7 @@
     "date": "2026-09-13",
     "start_time": "13:30",
     "end_time": "18:15",
-    "station": "AE Floater",
+    "station": "After Effects Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1295,7 +1295,7 @@
     "date": "2026-09-13",
     "start_time": "09:15",
     "end_time": "13:30",
-    "station": "AE Floater",
+    "station": "After Effects Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1355,7 +1355,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1365,7 +1365,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "Premiere Pro",
+    "station": "Premiere (COLOR)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1375,27 +1375,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "Premiere Pro",
-    "is_floater": false,
-    "group": "Demo Artists"
-  },
-  {
-    "staff_name": "Annika Koenig",
-    "day": "Monday",
-    "date": "2026-09-14",
-    "start_time": "09:15",
-    "end_time": "12:30",
-    "station": "Premiere Pro",
-    "is_floater": false,
-    "group": "Demo Artists"
-  },
-  {
-    "staff_name": "Umang Mital",
-    "day": "Monday",
-    "date": "2026-09-14",
-    "start_time": "12:30",
-    "end_time": "16:00",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (Generative Workflows)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1405,7 +1385,27 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "Premiere (AI - Gen Media & Audio)",
+    "station": "Premiere (Generative Workflows)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Umang Mital",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "12:30",
+    "end_time": "16:00",
+    "station": "Premiere (AI Audio)",
+    "is_floater": false,
+    "group": "Demo Artists"
+  },
+  {
+    "staff_name": "Adolfo Hernandez Santisteban",
+    "day": "Monday",
+    "date": "2026-09-14",
+    "start_time": "09:15",
+    "end_time": "12:30",
+    "station": "Premiere (AI Audio)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1515,7 +1515,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "Firefly E",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1525,7 +1525,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "Firefly E",
+    "station": "Firefly Enterprise (Meeting Room Lobby)",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1543,18 +1543,8 @@
     "staff_name": "Anton Knoblach",
     "day": "Monday",
     "date": "2026-09-14",
-    "start_time": "13:00",
-    "end_time": "14:30",
-    "station": "AI Assistant",
-    "is_floater": false,
-    "group": "Demo Artists"
-  },
-  {
-    "staff_name": "Kylee Pena",
-    "day": "Monday",
-    "date": "2026-09-14",
     "start_time": "11:30",
-    "end_time": "13:00",
+    "end_time": "14:30",
     "station": "AI Assistant",
     "is_floater": false,
     "group": "Demo Artists"
@@ -1585,7 +1575,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "Frame.io",
+    "station": "Frame.io 1",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1605,7 +1595,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "Frame.io",
+    "station": "Frame.io 2",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1625,7 +1615,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "Frame.io",
+    "station": "Frame.io 3",
     "is_floater": false,
     "group": "Demo Artists"
   },
@@ -1675,7 +1665,7 @@
     "date": "2026-09-14",
     "start_time": "10:30",
     "end_time": "14:00",
-    "station": "PS Floater",
+    "station": "Photoshop Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1685,7 +1675,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1695,7 +1685,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1705,7 +1695,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1715,7 +1705,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1725,7 +1715,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1735,7 +1725,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1745,7 +1735,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "PR Floater",
+    "station": "Premiere Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1755,7 +1745,7 @@
     "date": "2026-09-14",
     "start_time": "12:30",
     "end_time": "16:00",
-    "station": "AE Floater",
+    "station": "After Effects Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
@@ -1765,7 +1755,7 @@
     "date": "2026-09-14",
     "start_time": "09:15",
     "end_time": "12:30",
-    "station": "AE Floater",
+    "station": "After Effects Floater",
     "is_floater": true,
     "group": "ATE Floaters"
   },
