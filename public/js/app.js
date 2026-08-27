@@ -9,6 +9,13 @@ import { initShiftChangeModal } from './coverage.js';
 const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
 const LS_NAME = 'staff-scheduler-name';
 
+function urlB64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+  const base = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base);
+  return Uint8Array.from([...raw].map((ch) => ch.charCodeAt(0)));
+}
+
 async function main() {
   const root = document.getElementById('app');
 
@@ -52,6 +59,7 @@ async function main() {
           <button class="name-clear" aria-label="Clear name" ${selectedName ? '' : 'hidden'}>✕</button>
           <ul class="name-suggestions" hidden></ul>
         </div>
+        <button class="staff-alerts-btn" id="staff-alerts-btn" hidden>🔔 Enable phone alerts</button>
       </div>
       <div class="incoming-asks" id="incoming-asks"></div>
       <div class="my-slots"></div>
@@ -159,6 +167,7 @@ async function main() {
   const nameInput = myPanel.querySelector('.name-input');
   const clearBtn = myPanel.querySelector('.name-clear');
   const suggestionsEl = myPanel.querySelector('.name-suggestions');
+  const staffAlertsBtn = myPanel.querySelector('#staff-alerts-btn');
 
   const shiftChangeModal = initShiftChangeModal(data, event);
   const onRequestChange = (slot) => shiftChangeModal.open(slot, selectedName);
@@ -168,9 +177,37 @@ async function main() {
     selectedName = name;
     try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
     clearBtn.hidden = !name;
+    staffAlertsBtn.hidden = !name;
     renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
     loadIncomingAsks(selectedName);
   }
+
+  // Staff opt-in to phone push, keyed to their name, so a directed ask buzzes them.
+  async function enableStaffPush() {
+    const name = selectedName;
+    if (!name) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      staffAlertsBtn.textContent = 'Alerts not supported'; staffAlertsBtn.disabled = true; return;
+    }
+    staffAlertsBtn.disabled = true; staffAlertsBtn.textContent = 'Enabling…';
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { staffAlertsBtn.textContent = 'Alerts blocked'; return; }
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      const { key } = await (await fetch('/api/push/vapid-public')).json();
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(key) });
+      const resp = await fetch('/api/push/subscribe/staff', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub, name }),
+      });
+      try { const c = await caches.open('push-meta'); await c.put('/__push_role', new Response('staff')); } catch { /* noop */ }
+      staffAlertsBtn.textContent = resp.ok ? '🔔 Alerts on ✓' : 'Try again';
+      staffAlertsBtn.disabled = resp.ok;
+    } catch { staffAlertsBtn.textContent = 'Try again'; staffAlertsBtn.disabled = false; }
+  }
+  staffAlertsBtn.addEventListener('click', enableStaffPush);
 
   // Directed asks waiting for THIS person to accept/decline (shown atop My Schedule).
   async function respondAsk(id, action, name) {
@@ -235,6 +272,7 @@ async function main() {
   });
   clearBtn.addEventListener('click', () => { nameInput.value = ''; applyName(''); nameInput.focus(); });
 
+  staffAlertsBtn.hidden = !selectedName;
   renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
   showMode(mode);
 

@@ -1,7 +1,10 @@
 // Service worker for the IBC staff app. Network-first with a cache fallback:
 // online users always get fresh data (the schedule changes), offline users get
 // the last-seen version. Bump CACHE on any shell change to evict old assets.
-const CACHE = 'ibc-staff-v4';
+const CACHE = 'ibc-staff-v5';
+// Small cache holding this device's push role ('staff' | 'admin'), written by
+// the page on subscribe and read by the push handler. Kept across activations.
+const META_CACHE = 'push-meta';
 const SHELL = [
   '/',
   '/index.html',
@@ -25,27 +28,37 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('ibc-staff-') && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
 
-// Payload-less push: the worker signs a VAPID tickle; we render the text here.
+// Payload-less push: the worker signs a VAPID tickle; text is chosen here from
+// this device's stored role (staff device = "you were asked"; admin = queue).
 self.addEventListener('push', (e) => {
-  e.waitUntil(self.registration.showNotification('New shift-change request', {
-    body: 'Open Schedule Admin to review and approve.',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    tag: 'shift-request',
-    data: { url: '/admin.html' },
-  }));
+  e.waitUntil((async () => {
+    let role = 'admin';
+    try {
+      const m = await caches.open(META_CACHE).then((c) => c.match('/__push_role'));
+      if (m) role = (await m.text()) || 'admin';
+    } catch { /* default admin */ }
+    const staff = role === 'staff';
+    await self.registration.showNotification(staff ? 'Shift cover request' : 'New shift-change request', {
+      body: staff ? 'Someone asked you to cover a shift — tap to open.' : 'Open Schedule Admin to review and approve.',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: 'shift-request',
+      data: { url: staff ? '/' : '/admin.html' },
+    });
+  })());
 });
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
-    for (const c of cs) { if (c.url.includes('/admin') && 'focus' in c) return c.focus(); }
-    return self.clients.openWindow('/admin.html');
+    for (const c of cs) { if (c.url.includes(url) && 'focus' in c) return c.focus(); }
+    return self.clients.openWindow(url);
   }));
 });
 

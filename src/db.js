@@ -168,19 +168,32 @@ export async function markRequest(env, id, status, covererName) {
     .run();
 }
 
-// --- web push subscriptions (admin phone alerts) ---
-export async function savePushSubscription(env, sub) {
+// --- web push subscriptions ---
+// staff_name NULL = admin device (broadcast queue alerts); set = that person's
+// device (targeted "you were asked" alerts).
+export async function savePushSubscription(env, sub, staffName = null) {
   if (!sub || !sub.endpoint) return { error: 'no endpoint' };
+  const name = staffName ? `${staffName}`.trim().slice(0, 100) : null;
   await env.DB
-    .prepare(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at) VALUES (?,?,?,?)
-              ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth`)
-    .bind(sub.endpoint, sub.keys?.p256dh || null, sub.keys?.auth || null, new Date().toISOString())
+    .prepare(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at, staff_name) VALUES (?,?,?,?,?)
+              ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, staff_name = excluded.staff_name`)
+    .bind(sub.endpoint, sub.keys?.p256dh || null, sub.keys?.auth || null, new Date().toISOString(), name)
     .run();
   return { ok: true };
 }
 
+// Admin devices (broadcast queue alerts).
 export async function listPushSubscriptions(env) {
-  const { results } = await env.DB.prepare('SELECT endpoint, p256dh, auth FROM push_subscriptions').all();
+  const { results } = await env.DB.prepare('SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE staff_name IS NULL').all();
+  return results;
+}
+
+// A specific person's devices (targeted alerts).
+export async function listStaffSubscriptions(env, name) {
+  const { results } = await env.DB
+    .prepare('SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE lower(staff_name) = lower(?)')
+    .bind(name)
+    .all();
   return results;
 }
 

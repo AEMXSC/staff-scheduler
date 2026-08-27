@@ -577,6 +577,8 @@ async function enablePush() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(sub),
     });
+    // Tag this device so the service worker shows admin-style notifications.
+    try { const c = await caches.open('push-meta'); await c.put('/__push_role', new Response('admin')); } catch { /* noop */ }
     pushBtn.textContent = resp.ok ? 'Phone alerts on ✓' : 'Try again';
     pushBtn.disabled = resp.ok;
   } catch {

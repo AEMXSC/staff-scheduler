@@ -9,7 +9,7 @@ import {
   replaceSchedule, getContacts, replaceContacts, getDirectory,
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
   listRequestsForTarget, respondToRequest,
-  savePushSubscription, listPushSubscriptions, deletePushSubscription,
+  savePushSubscription, listPushSubscriptions, listStaffSubscriptions, deletePushSubscription,
 } from './db.js';
 import { sendPush } from './push.js';
 
@@ -313,14 +313,24 @@ async function handleGetContacts(request, env) {
 
 // Best-effort push to any admin who enabled phone alerts. Never throws into
 // the request flow; prunes dead subscriptions.
-async function notifyAdmins(env) {
-  const subs = await listPushSubscriptions(env);
+async function pushAll(env, subs) {
   await Promise.all(subs.map(async (s) => {
     try {
       const r = await sendPush(env, s);
       if (r.status === 404 || r.status === 410) await deletePushSubscription(env, s.endpoint);
     } catch { /* push is best-effort */ }
   }));
+}
+
+async function notifyAdmins(env) {
+  await pushAll(env, await listPushSubscriptions(env));
+}
+
+// Targeted push to the person who was asked to cover (their device shows a
+// "you were asked" alert; see the service worker).
+async function notifyStaff(env, name) {
+  if (!name) return;
+  await pushAll(env, await listStaffSubscriptions(env, name));
 }
 
 async function handlePushKey(env) {
@@ -342,6 +352,23 @@ async function handlePushSubscribe(request, env) {
   const sub = await request.json();
   if (!sub || !isAllowedPushEndpoint(sub.endpoint)) return json({ error: 'Invalid push endpoint.' }, 400);
   const result = await savePushSubscription(env, sub);
+  if (result.error) return json({ error: result.error }, 400);
+  return json({ ok: true });
+}
+
+// Public: a staff member subscribes their own device, keyed to their name, so a
+// directed ask can push straight to them. Rate-limited + endpoint-allowlisted.
+async function handlePushSubscribeStaff(request, env) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const key = `reqrate:${ip}`;
+  const raw = await env.SCHEDULE_KV.get(key);
+  if (raw !== null && Number(raw) >= REQ_RATE_MAX) return json({ error: 'Too many requests — try again later.' }, 429);
+  await env.SCHEDULE_KV.put(key, String((raw ? Number(raw) : 0) + 1), { expirationTtl: REQ_RATE_TTL });
+
+  const { subscription, name } = await request.json();
+  if (!name || !`${name}`.trim()) return json({ error: 'Pick your name first.' }, 400);
+  if (!subscription || !isAllowedPushEndpoint(subscription.endpoint)) return json({ error: 'Invalid push endpoint.' }, 400);
+  const result = await savePushSubscription(env, subscription, name);
   if (result.error) return json({ error: result.error }, 400);
   return json({ ok: true });
 }
@@ -375,6 +402,8 @@ async function handleCreateRequest(request, env, ctx) {
   // Only ping admins once a request actually reaches their queue (open asks
   // immediately; directed asks only after the target accepts).
   if (ctx && result.status === 'awaiting_admin') ctx.waitUntil(notifyAdmins(env));
+  // Directed ask -> buzz the person who was asked.
+  if (ctx && result.status === 'awaiting_target') ctx.waitUntil(notifyStaff(env, body.targetName));
   return json({ ok: true, id: result.id, status: result.status });
 }
 
@@ -466,6 +495,7 @@ export default {
     if (url.pathname === '/api/admin/requests/resolve' && request.method === 'POST') return handleResolveRequest(request, env);
     if (url.pathname === '/api/push/vapid-public' && request.method === 'GET') return handlePushKey(env);
     if (url.pathname === '/api/admin/push/subscribe' && request.method === 'POST') return handlePushSubscribe(request, env);
+    if (url.pathname === '/api/push/subscribe/staff' && request.method === 'POST') return handlePushSubscribeStaff(request, env);
     return new Response('Not found', { status: 404 });
   },
 };

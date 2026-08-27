@@ -368,9 +368,16 @@ body {
 .coverage-send:hover { filter: brightness(1.1); }
 .coverage-copy { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 .coverage-copy:hover { background: var(--gray-300); }
+.staff-alerts-btn {
+  margin-top: 10px; padding: 8px 14px; border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.staff-alerts-btn:disabled { opacity: 0.7; cursor: default; }
+
 .incoming-asks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
 .ask-card {
-  background: var(--surface); border: 1px solid var(--accent); border-left-width: 4px;
+  background: var(--surface); border: 1px solid var(--accent);
   border-radius: var(--radius-md); padding: 12px 14px;
 }
 .ask-title { font-weight: 700; font-size: 14px; color: var(--text); }
