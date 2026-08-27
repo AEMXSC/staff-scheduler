@@ -6,7 +6,7 @@ import {
   getSchedule, distinctDays, isReadOnlySelect, runReadOnly,
   planReassign, planSwap, applyPending,
   planAddShift, planCancelShift, planEditShiftTime, coverageBySlot,
-  replaceSchedule, getContacts, replaceContacts,
+  replaceSchedule, getContacts, replaceContacts, getDirectory,
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
   savePushSubscription, listPushSubscriptions, deletePushSubscription,
 } from './db.js';
@@ -96,6 +96,12 @@ function json(data, status = 200) {
 
 async function handleGetSchedule(eventId, env) {
   return json(await getSchedule(env, eventId));
+}
+
+// Public staff directory (title/email/phone/slack) -- exposed by request so
+// staff can tap to Slack/call at the booth.
+async function handleGetDirectory(eventId, env) {
+  return json(await getDirectory(env, eventId));
 }
 
 async function handleAuth(request, env) {
@@ -418,6 +424,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/schedule/') && request.method === 'GET') {
       return handleGetSchedule(url.pathname.split('/').pop(), env);
+    }
+    if (url.pathname.startsWith('/api/directory/') && request.method === 'GET') {
+      return handleGetDirectory(url.pathname.split('/').pop(), env);
     }
     if (url.pathname === '/api/admin/auth' && request.method === 'POST') return handleAuth(request, env);
     if (url.pathname === '/api/admin/chat' && request.method === 'POST') return handleChat(request, env);

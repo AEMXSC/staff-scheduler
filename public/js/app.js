@@ -40,6 +40,7 @@ async function main() {
     <div class="toggle" role="group" aria-label="Schedule view">
       <button class="toggle-btn" data-mode="my">My Schedule</button>
       <button class="toggle-btn" data-mode="now">Who's On Now</button>
+      <button class="toggle-btn" data-mode="contacts">Contacts</button>
     </div>
     <div class="panel panel-my">
       <div class="name-picker">
@@ -55,13 +56,22 @@ async function main() {
     <div class="panel panel-now">
       <div class="day-picker" role="group" aria-label="Select day"></div>
       <div class="now-content"></div>
+    </div>
+    <div class="panel panel-contacts">
+      <div class="name-picker">
+        <input type="text" class="name-input" id="contacts-search" placeholder="Search name or role…" autocomplete="off">
+      </div>
+      <div class="contacts-list" id="contacts-list"></div>
     </div>`;
 
   const myPanel = root.querySelector('.panel-my');
   const nowPanel = root.querySelector('.panel-now');
+  const contactsPanel = root.querySelector('.panel-contacts');
   const mySlotsEl = root.querySelector('.my-slots');
   const dayPicker = root.querySelector('.day-picker');
   const nowContentEl = root.querySelector('.now-content');
+  const contactsListEl = root.querySelector('#contacts-list');
+  const contactsSearch = root.querySelector('#contacts-search');
   const toggle = root.querySelector('.toggle');
 
   const zoned = getZonedNow(event.timezone);
@@ -87,8 +97,57 @@ async function main() {
     toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.classList.toggle('toggle-active', btn.dataset.mode === mode));
     myPanel.classList.toggle('panel-hidden', mode !== 'my');
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
+    contactsPanel.classList.toggle('panel-hidden', mode !== 'contacts');
     if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
+    if (mode === 'contacts') loadDirectory();
   }
+
+  // Staff-facing directory: tap-to-Slack (LDAP handle from email), tap-to-call,
+  // email. Fetched once, then filtered client-side.
+  let directory = null;
+  const handleFromEmail = (email) => (email ? `@${email.split('@')[0]}` : '');
+
+  function renderContacts(filter) {
+    const q = (filter || '').trim().toLowerCase();
+    const rows = directory.filter((c) => !q
+      || (c.name && c.name.toLowerCase().includes(q))
+      || (c.title && c.title.toLowerCase().includes(q)));
+    if (!rows.length) { contactsListEl.innerHTML = '<p class="hint">No matches.</p>'; return; }
+    contactsListEl.innerHTML = rows.map((c) => {
+      const handle = c.slack || handleFromEmail(c.email);
+      const slackBtn = handle
+        ? `<a class="contact-btn contact-slack" href="https://slack.com/app_redirect?channel=${encodeURIComponent(handle)}" target="_blank" rel="noopener">Slack</a>`
+        : '';
+      const phoneBtn = c.phone
+        ? `<a class="contact-btn contact-phone" href="tel:${escapeHtml(c.phone.replace(/[^\d+]/g, ''))}">${escapeHtml(c.phone)}</a>`
+        : '';
+      const emailBtn = c.email
+        ? `<a class="contact-btn contact-email" href="mailto:${escapeHtml(c.email)}" aria-label="Email ${escapeHtml(c.name)}">Email</a>`
+        : '';
+      return `<div class="contact-row">
+        <div class="contact-info">
+          <div class="contact-name">${escapeHtml(c.name)}</div>
+          ${c.title ? `<div class="contact-title">${escapeHtml(c.title)}</div>` : ''}
+          ${handle ? `<div class="contact-handle">${escapeHtml(handle)}</div>` : ''}
+        </div>
+        <div class="contact-actions">${slackBtn}${phoneBtn}${emailBtn}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function loadDirectory() {
+    if (directory) { renderContacts(contactsSearch.value); return; }
+    contactsListEl.innerHTML = '<p class="hint">Loading…</p>';
+    try {
+      const resp = await fetch(`/api/directory/${eventId}`);
+      directory = resp.ok ? await resp.json() : [];
+      renderContacts(contactsSearch.value);
+    } catch {
+      contactsListEl.innerHTML = '<p class="hint">Could not load contacts.</p>';
+    }
+  }
+
+  contactsSearch.addEventListener('input', () => { if (directory) renderContacts(contactsSearch.value); });
 
   toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.addEventListener('click', () => showMode(btn.dataset.mode)));
 

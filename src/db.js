@@ -61,6 +61,16 @@ export async function getContacts(env, eventId) {
   return results;
 }
 
+// Staff-facing directory (name/title/email/phone/slack) -- the tap-to-Slack /
+// tap-to-call list. Excludes manager. Served on a public route by request.
+export async function getDirectory(env, eventId) {
+  const { results } = await env.DB
+    .prepare('SELECT name, title, email, phone, slack FROM contacts WHERE event_id = ? ORDER BY name')
+    .bind(eventId)
+    .all();
+  return results;
+}
+
 export async function replaceContacts(env, eventId, rows) {
   if (!Array.isArray(rows) || !rows.length) return { error: 'No rows.' };
   if (rows.length > MAX_UPLOAD_ROWS) return { error: `Too many rows (max ${MAX_UPLOAD_ROWS}).` };
