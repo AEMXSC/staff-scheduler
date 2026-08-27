@@ -81,12 +81,21 @@ const MAX_HISTORY = 20;
 let history = [];
 
 let pollTimer = null;
+// Uploaders are a setup tool, hidden from the day-to-day admin view; reveal
+// with ?tools=1 when loading a new schedule/contacts sheet.
+const SHOW_TOOLS = new URLSearchParams(window.location.search).get('tools') === '1';
+
+const CHAT_INTRO = 'How can I help you today? You can ask me about the schedule '
+  + '— e.g. "who\'s on Photoshop Friday?" or "how many people Saturday?" — or make a change like '
+  + '"swap Chris and Angela on Friday", "move Sam to Stock", or "cancel Dave\'s Saturday shift." '
+  + 'I\'ll show you the before/after and you confirm before anything updates.';
 
 function showChat() {
   authEl.hidden = true;
-  toolsEl.hidden = false;
+  toolsEl.hidden = !SHOW_TOOLS;
   requestsPanel.hidden = false;
   chatEl.hidden = false;
+  if (!messagesEl.children.length) addMessage('ai', CHAT_INTRO);
   loadRequestContext().then(() => loadRequests(true));
   // Live inbox: poll while the admin page is open so new requests surface
   // without a manual refresh (Geneliz is "on the app" at the booth).
