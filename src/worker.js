@@ -41,7 +41,7 @@ function fullDumpText(schedule) {
     .join('\n');
 }
 
-function systemPrompt(days, digest, fullDump) {
+function systemPrompt(eventId, days, digest, fullDump) {
   let p = 'You are the scheduling assistant for a staff event. Answer questions and propose changes concisely.\n\n'
     + 'You have run_sql: compose ONE read-only SQLite SELECT per call, and you MAY call it multiple times in a turn '
     + '-- query, read the result, query again if needed, then give your answer. '
@@ -49,7 +49,7 @@ function systemPrompt(days, digest, fullDump) {
     + 'For judgment questions (is it balanced? who is overworked? any awkward gaps?), first run an aggregating query '
     + '(GROUP BY, counts, durations) and reason over that small result set -- not over raw rows.\n\n'
     + 'Table: shifts(id, event_id, staff_name, day, date, start_time, end_time, station, is_floater, group_name)\n'
-    + `- ALWAYS include: WHERE event_id = '${EVENT_ID}'\n`
+    + `- ALWAYS include: WHERE event_id = '${eventId}'\n`
     + `- day is one of: ${days.join(', ')}\n`
     + '- start_time/end_time are \'HH:MM\' 24h strings and compare correctly as text\n'
     + '- is_floater: 1 = backup/floater, 0 = primary\n'
@@ -64,7 +64,7 @@ function systemPrompt(days, digest, fullDump) {
     + '-- use this expression for any duration/length/longer-than question\n\n'
     + 'There is also a directory table for REACHING staff (query it with run_sql too):\n'
     + 'contacts(id, event_id, name, email, phone, slack, whatsapp, title, manager)\n'
-    + `- filter WHERE event_id = '${EVENT_ID}'; join to shifts on contacts.name = shifts.staff_name\n`
+    + `- filter WHERE event_id = '${eventId}'; join to shifts on contacts.name = shifts.staff_name\n`
     + '- use it for any "phone/email/slack/title/role/manager/how do I reach <person, or the person on <station> '
     + 'that day>" question; title is their badge title, manager is their manager\'s name (look that manager up in '
     + 'contacts for their email); a person may be in contacts but have some fields blank\n\n'
@@ -221,7 +221,7 @@ async function handleChat(request, env) {
   const tools = buildTools(days);
 
   const convo = [
-    { role: 'system', content: systemPrompt(days, scheduleDigest(schedule), fullDump) },
+    { role: 'system', content: systemPrompt(eventId, days, scheduleDigest(schedule), fullDump) },
     ...history,
   ];
 
