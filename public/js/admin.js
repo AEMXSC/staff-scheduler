@@ -451,7 +451,9 @@ function renderRequest(req) {
 
   const note = document.createElement('div');
   note.className = 'admin-request-note';
-  note.textContent = 'Requester is self-reported — confirm before approving.';
+  note.textContent = req.target_name
+    ? `✓ ${req.target_name} accepted — approve to confirm.`
+    : 'Open ask — pick who covers (names are self-reported).';
   card.append(note);
 
   if (req.message) {

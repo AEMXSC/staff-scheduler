@@ -8,6 +8,7 @@ import {
   planAddShift, planCancelShift, planEditShiftTime, coverageBySlot,
   replaceSchedule, getContacts, replaceContacts, getDirectory,
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
+  listRequestsForTarget, respondToRequest,
   savePushSubscription, listPushSubscriptions, deletePushSubscription,
 } from './db.js';
 import { sendPush } from './push.js';
@@ -371,8 +372,32 @@ async function handleCreateRequest(request, env, ctx) {
     }[result.error] || 'Could not submit the request.';
     return json({ error: msg }, 400);
   }
-  if (ctx) ctx.waitUntil(notifyAdmins(env));
-  return json({ ok: true, id: result.id });
+  // Only ping admins once a request actually reaches their queue (open asks
+  // immediately; directed asks only after the target accepts).
+  if (ctx && result.status === 'awaiting_admin') ctx.waitUntil(notifyAdmins(env));
+  return json({ ok: true, id: result.id, status: result.status });
+}
+
+// Public: the asked person sees requests waiting for their accept/decline.
+async function handleRequestsForTarget(request, env) {
+  const url = new URL(request.url);
+  const eventId = url.searchParams.get('eventId') || EVENT_ID;
+  const name = url.searchParams.get('name') || '';
+  if (!name.trim()) return json([]);
+  return json(await listRequestsForTarget(env, eventId, name));
+}
+
+// Public: the asked person accepts (-> admin queue, pings admins) or declines.
+async function handleRespondRequest(request, env, ctx) {
+  const { id, name, action } = await request.json();
+  if (!id || !name || (action !== 'accept' && action !== 'decline')) return json({ error: 'Bad request' }, 400);
+  const result = await respondToRequest(env, id, name, action);
+  if (result.error === 'notfound') return json({ error: 'Request not found.' }, 404);
+  if (result.error === 'notpending') return json({ error: 'That request was already handled.' }, 409);
+  if (result.error === 'mismatch') return json({ error: 'That request was not addressed to you.' }, 403);
+  if (result.error) return json({ error: 'Could not respond.' }, 400);
+  if (ctx && result.status === 'awaiting_admin') ctx.waitUntil(notifyAdmins(env));
+  return json({ message: action === 'accept' ? 'Accepted — sent to the admin to confirm.' : 'Declined.' });
 }
 
 async function handleListRequests(request, env) {
@@ -389,7 +414,7 @@ async function handleResolveRequest(request, env) {
   if (!id || (action !== 'approve' && action !== 'decline')) return json({ error: 'Bad request' }, 400);
   const req = await getRequestById(env, id);
   if (!req) return json({ error: 'Request not found' }, 404);
-  if (req.status !== 'pending') return json({ error: 'That request was already resolved.' }, 409);
+  if (req.status !== 'awaiting_admin') return json({ error: 'That request is not ready for approval.' }, 409);
 
   if (action === 'decline') {
     await markRequest(env, id, 'declined', null);
@@ -435,6 +460,8 @@ export default {
     if (url.pathname === '/api/admin/contacts-upload' && request.method === 'POST') return handleContactsUpload(request, env);
     if (url.pathname === '/api/admin/contacts' && request.method === 'GET') return handleGetContacts(request, env);
     if (url.pathname === '/api/requests' && request.method === 'POST') return handleCreateRequest(request, env, ctx);
+    if (url.pathname === '/api/requests/for' && request.method === 'GET') return handleRequestsForTarget(request, env);
+    if (url.pathname === '/api/requests/respond' && request.method === 'POST') return handleRespondRequest(request, env, ctx);
     if (url.pathname === '/api/admin/requests' && request.method === 'GET') return handleListRequests(request, env);
     if (url.pathname === '/api/admin/requests/resolve' && request.method === 'POST') return handleResolveRequest(request, env);
     if (url.pathname === '/api/push/vapid-public' && request.method === 'GET') return handlePushKey(env);

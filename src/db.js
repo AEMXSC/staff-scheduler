@@ -107,21 +107,50 @@ export async function createRequest(env, eventId, { requesterName, shiftId, targ
   if (shift.staff_name.trim().toLowerCase() !== name.toLowerCase()) return { error: 'mismatch' };
   const target = typeof targetName === 'string' && targetName.trim() ? targetName.trim().slice(0, 100) : null;
   const msg = typeof message === 'string' ? message.trim().slice(0, MAX_MESSAGE_LEN) : null;
+  // Directed asks wait for the named person to accept first; open asks go
+  // straight to the admin queue.
+  const status = target ? 'awaiting_target' : 'awaiting_admin';
   const res = await env.DB
     .prepare(`INSERT INTO change_requests
       (event_id, requester_name, shift_id, day, station, start_time, end_time, target_name, message, status, created_at)
-      VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?)`)
-    .bind(eventId, shift.staff_name, shift.id, shift.day, shift.station, shift.start_time, shift.end_time, target, msg, new Date().toISOString())
+      VALUES (?,?,?,?,?,?,?,?,?,?, ?)`)
+    .bind(eventId, shift.staff_name, shift.id, shift.day, shift.station, shift.start_time, shift.end_time, target, msg, status, new Date().toISOString())
     .run();
-  return { ok: true, id: res.meta?.last_row_id };
+  return { ok: true, id: res.meta?.last_row_id, status };
 }
 
+// Admin inbox: only requests ready for an approve/decline decision.
 export async function listPendingRequests(env, eventId) {
   const { results } = await env.DB
     .prepare('SELECT * FROM change_requests WHERE event_id = ? AND status = ? ORDER BY created_at')
-    .bind(eventId, 'pending')
+    .bind(eventId, 'awaiting_admin')
     .all();
   return results;
+}
+
+// Staff inbox: directed asks awaiting THIS person's accept/decline.
+export async function listRequestsForTarget(env, eventId, name) {
+  const { results } = await env.DB
+    .prepare(`SELECT id, requester_name, day, station, start_time, end_time, message
+              FROM change_requests WHERE event_id = ? AND status = 'awaiting_target' AND lower(target_name) = lower(?)
+              ORDER BY created_at`)
+    .bind(eventId, name)
+    .all();
+  return results;
+}
+
+// The asked person accepts (-> admin queue) or declines (-> closed).
+export async function respondToRequest(env, id, name, action) {
+  const r = await getRequestById(env, id);
+  if (!r) return { error: 'notfound' };
+  if (r.status !== 'awaiting_target') return { error: 'notpending' };
+  if (!r.target_name || r.target_name.trim().toLowerCase() !== String(name || '').trim().toLowerCase()) return { error: 'mismatch' };
+  const status = action === 'accept' ? 'awaiting_admin' : 'declined_by_target';
+  await env.DB
+    .prepare('UPDATE change_requests SET status = ?, resolved_at = ? WHERE id = ?')
+    .bind(status, action === 'accept' ? null : new Date().toISOString(), id)
+    .run();
+  return { ok: true, status, req: r };
 }
 
 export async function getRequestById(env, id) {

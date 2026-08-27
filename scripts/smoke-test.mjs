@@ -65,20 +65,33 @@ async function main() {
       return s ? s.staff_name : null;
     };
 
-    // 3. Directed request -> approve -> schedule updates
-    section('Directed request → approve updates the schedule');
+    // 3. Directed request -> target accepts -> admin approves -> schedule updates
+    section('Directed request → target accepts → admin approves');
     const r1 = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: coverA, message: 'smoke: cover me' } });
-    check('staff submits a directed request', r1.status === 200 && r1.data?.ok, `status ${r1.status}`);
+    check('staff submits a directed request', r1.status === 200 && r1.data?.status === 'awaiting_target', `status ${r1.status} / ${r1.data?.status}`);
+    const beforeInbox = await api(`/api/admin/requests?eventId=${EVENT}`, { token });
+    check('directed ask is NOT in admin inbox yet', Array.isArray(beforeInbox.data) && !beforeInbox.data.some((x) => x.id === r1.data.id), 'waits for target');
+    const forTarget = await api(`/api/requests/for?eventId=${EVENT}&name=${encodeURIComponent(coverA)}`);
+    check('the asked person sees it', Array.isArray(forTarget.data) && forTarget.data.some((x) => x.id === r1.data.id), `${(forTarget.data || []).length} for ${coverA}`);
+    const acc = await api('/api/requests/respond', { method: 'POST', body: { id: r1.data.id, name: coverA, action: 'accept' } });
+    check('asked person accepts', acc.status === 200, acc.data?.message || `status ${acc.status}`);
     const inbox1 = await api(`/api/admin/requests?eventId=${EVENT}`, { token });
-    check('request appears in admin inbox', Array.isArray(inbox1.data) && inbox1.data.some((x) => x.id === r1.data.id), `${(inbox1.data || []).length} pending`);
+    check('accepted ask now in admin inbox', Array.isArray(inbox1.data) && inbox1.data.some((x) => x.id === r1.data.id), `${(inbox1.data || []).length} pending`);
     const ap1 = await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: r1.data.id, action: 'approve' } });
     check('admin approves', ap1.status === 200, ap1.data?.message || `status ${ap1.status}`);
     check('schedule now shows the coverer', (await ownerOf(shift.id)) === coverA, `owner is now ${await ownerOf(shift.id)}`);
 
-    // 4. Restore shift 1 (coverer -> original owner) via the same flow
+    // 3b. Directed request the target DECLINES stays out of the admin inbox
+    const rDec = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: coverA, shiftId: shift.id, targetName: ownerA } });
+    await api('/api/requests/respond', { method: 'POST', body: { id: rDec.data.id, name: ownerA, action: 'decline' } });
+    const afterDec = await api(`/api/admin/requests?eventId=${EVENT}`, { token });
+    check('a declined ask never reaches the admin', Array.isArray(afterDec.data) && !afterDec.data.some((x) => x.id === rDec.data.id), 'declined_by_target');
+    check('shift unchanged after target decline', (await ownerOf(shift.id)) === coverA, `owner is ${await ownerOf(shift.id)}`);
+
+    // 4. Restore shift 1 (open ask + pick original owner as coverer)
     section('Restore shift 1');
-    const rr = await api('/api/requests', { method: 'POST', token, body: { eventId: EVENT, requesterName: coverA, shiftId: shift.id, targetName: ownerA } });
-    await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: rr.data.id, action: 'approve' } });
+    const rr = await api('/api/requests', { method: 'POST', token, body: { eventId: EVENT, requesterName: await ownerOf(shift.id), shiftId: shift.id, targetName: null } });
+    await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: rr.data.id, action: 'approve', covererName: ownerA } });
     check('owner restored', (await ownerOf(shift.id)) === ownerA, `owner is ${await ownerOf(shift.id)}`);
 
     // 5. Open ask -> decline -> no change
@@ -91,17 +104,17 @@ async function main() {
 
     // 6. Drift guard: shift changes after a request is filed -> stale approval blocked
     section('Drift guard (stale approval is blocked)');
-    const stale = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: coverA } });
-    const bump = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: ownerB } });
-    await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: bump.data.id, action: 'approve' } }); // owner -> ownerB
-    const staleAp = await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: stale.data.id, action: 'approve' } });
+    // Two open asks (both go straight to the admin queue). Approve one to move
+    // the shift, then the other's approval must fail as stale.
+    const stale = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: null } });
+    const bump = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: null } });
+    await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: bump.data.id, action: 'approve', covererName: ownerB } }); // owner -> ownerB
+    const staleAp = await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: stale.data.id, action: 'approve', covererName: coverA } });
     check('stale approval returns 409', staleAp.status === 409, `status ${staleAp.status}`);
-    // the stale request is correctly still pending after the 409 — clear it so
-    // the test leaves no residue in the inbox
     await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: stale.data.id, action: 'decline' } });
     // restore shift 1 back to original owner
-    const fix = await api('/api/requests', { method: 'POST', token, body: { eventId: EVENT, requesterName: await ownerOf(shift.id), shiftId: shift.id, targetName: ownerA } });
-    await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: fix.data.id, action: 'approve' } });
+    const fix = await api('/api/requests', { method: 'POST', token, body: { eventId: EVENT, requesterName: await ownerOf(shift.id), shiftId: shift.id, targetName: null } });
+    await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: fix.data.id, action: 'approve', covererName: ownerA } });
     check('shift 1 restored after drift test', (await ownerOf(shift.id)) === ownerA, `owner is ${await ownerOf(shift.id)}`);
 
     // 7. Input guards
@@ -135,8 +148,8 @@ async function main() {
       const restore = async (id, want) => {
         const cur = (await api(`/api/schedule/${EVENT}`)).data.find((r) => r.id === id);
         if (cur && cur.staff_name !== want) {
-          const q = await api('/api/requests', { method: 'POST', token, body: { eventId: EVENT, requesterName: cur.staff_name, shiftId: id, targetName: want } });
-          if (q.data?.id) await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: q.data.id, action: 'approve' } });
+          const q = await api('/api/requests', { method: 'POST', token, body: { eventId: EVENT, requesterName: cur.staff_name, shiftId: id, targetName: null } });
+          if (q.data?.id) await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: q.data.id, action: 'approve', covererName: want } });
         }
       };
       try { await restore(shift.id, ownerA); if (shift2) await restore(shift2.id, ownerB); } catch { /* best effort */ }

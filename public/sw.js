@@ -1,7 +1,7 @@
 // Service worker for the IBC staff app. Network-first with a cache fallback:
 // online users always get fresh data (the schedule changes), offline users get
 // the last-seen version. Bump CACHE on any shell change to evict old assets.
-const CACHE = 'ibc-staff-v3';
+const CACHE = 'ibc-staff-v4';
 const SHELL = [
   '/',
   '/index.html',

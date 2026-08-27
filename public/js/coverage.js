@@ -5,6 +5,17 @@ import { getFreeFloaters } from './schedule.js';
 
 const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
 
+// Look up a person's phone from the public directory (cached) to build the
+// requester's one-tap "text them" nudge.
+let directoryCache = null;
+async function phoneFor(name) {
+  if (!directoryCache) {
+    try { directoryCache = await (await fetch(`/api/directory/${eventId}`)).json(); } catch { directoryCache = []; }
+  }
+  const c = (directoryCache || []).find((x) => x.name && x.name.trim().toLowerCase() === name.trim().toLowerCase());
+  return c && c.phone ? c.phone : null;
+}
+
 // "asking <target>" for a directed request; falls back to today's open
 // broadcast wording when no specific person is chosen.
 function buildShiftChangeMessage(name, assignment, windowStart, windowEnd, target) {
@@ -130,9 +141,25 @@ export function initShiftChangeModal(data, event) {
       const data = await resp.json();
       if (resp.ok) {
         statusEl.dataset.kind = 'ok';
-        statusEl.textContent = '✓ Request submitted — an admin will confirm coverage.';
+        const target = targetSel.value;
         sendBtn.textContent = 'Submitted';
-        setTimeout(closeModal, 1600);
+        if (target) {
+          // Directed ask: it waits for that person to accept. Offer a one-tap
+          // text so the requester can nudge them to open the app.
+          statusEl.textContent = `✓ Sent to ${target} to accept. `;
+          const phone = await phoneFor(target);
+          if (phone) {
+            const body = `Can you cover my ${assignment.station} ${fmt12(startSel.value)}–${fmt12(endSel.value)} on ${assignment.day} at IBC? Open the staff app → My Schedule to accept.`;
+            const a = document.createElement('a');
+            a.className = 'coverage-sms';
+            a.href = `sms:${phone.replace(/[^\d+]/g, '')}?body=${encodeURIComponent(body)}`;
+            a.textContent = `Text ${target}`;
+            statusEl.append(a);
+          }
+        } else {
+          statusEl.textContent = '✓ Request submitted — an admin will confirm coverage.';
+          setTimeout(closeModal, 1600);
+        }
       } else {
         statusEl.dataset.kind = 'err';
         statusEl.textContent = data.error || 'Could not submit — try again.';

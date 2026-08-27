@@ -1,4 +1,6 @@
-import { fetchScheduleData, getZonedNow, escapeHtml } from './time-utils.js';
+import {
+  fetchScheduleData, getZonedNow, escapeHtml, fmt12,
+} from './time-utils.js';
 import {
   getDaySlots, findSlotIdx, renderMySchedule, renderWhosOnNow,
 } from './schedule.js';
@@ -51,6 +53,7 @@ async function main() {
           <ul class="name-suggestions" hidden></ul>
         </div>
       </div>
+      <div class="incoming-asks" id="incoming-asks"></div>
       <div class="my-slots"></div>
     </div>
     <div class="panel panel-now">
@@ -68,6 +71,7 @@ async function main() {
   const nowPanel = root.querySelector('.panel-now');
   const contactsPanel = root.querySelector('.panel-contacts');
   const mySlotsEl = root.querySelector('.my-slots');
+  const incomingAsksEl = root.querySelector('#incoming-asks');
   const dayPicker = root.querySelector('.day-picker');
   const nowContentEl = root.querySelector('.now-content');
   const contactsListEl = root.querySelector('#contacts-list');
@@ -98,6 +102,7 @@ async function main() {
     myPanel.classList.toggle('panel-hidden', mode !== 'my');
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
     contactsPanel.classList.toggle('panel-hidden', mode !== 'contacts');
+    if (mode === 'my') loadIncomingAsks(selectedName);
     if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
     if (mode === 'contacts') loadDirectory();
   }
@@ -164,6 +169,43 @@ async function main() {
     try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
     clearBtn.hidden = !name;
     renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
+    loadIncomingAsks(selectedName);
+  }
+
+  // Directed asks waiting for THIS person to accept/decline (shown atop My Schedule).
+  async function respondAsk(id, action, name) {
+    const res = incomingAsksEl.querySelector(`[data-res="${id}"]`);
+    if (res) res.textContent = action === 'accept' ? 'Accepting…' : 'Declining…';
+    try {
+      const resp = await fetch('/api/requests/respond', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: Number(id), name, action }),
+      });
+      const dataRes = await resp.json();
+      if (resp.ok) loadIncomingAsks(name);
+      else if (res) res.textContent = dataRes.error || 'Failed.';
+    } catch { if (res) res.textContent = 'Network error.'; }
+  }
+
+  async function loadIncomingAsks(name) {
+    if (!name) { incomingAsksEl.innerHTML = ''; return; }
+    try {
+      const asks = await (await fetch(`/api/requests/for?eventId=${eventId}&name=${encodeURIComponent(name)}`)).json();
+      if (!Array.isArray(asks) || !asks.length) { incomingAsksEl.innerHTML = ''; return; }
+      incomingAsksEl.innerHTML = asks.map((a) => `<div class="ask-card">
+        <div class="ask-title">${escapeHtml(a.requester_name)} asked you to cover</div>
+        <div class="ask-sub">${escapeHtml(a.station)} · ${escapeHtml(a.day)} ${fmt12(a.start_time)}–${fmt12(a.end_time)}</div>
+        ${a.message ? `<div class="ask-msg">${escapeHtml(a.message)}</div>` : ''}
+        <div class="ask-actions">
+          <button class="ask-accept" data-id="${a.id}">Accept</button>
+          <button class="ask-decline" data-id="${a.id}">Decline</button>
+        </div>
+        <p class="ask-result" data-res="${a.id}"></p>
+      </div>`).join('');
+      incomingAsksEl.querySelectorAll('.ask-accept, .ask-decline').forEach((btn) => {
+        btn.addEventListener('click', () => respondAsk(btn.dataset.id, btn.classList.contains('ask-accept') ? 'accept' : 'decline', name));
+      });
+    } catch { incomingAsksEl.innerHTML = ''; }
   }
 
   function onSelectPerson(name) {
@@ -198,7 +240,7 @@ async function main() {
   showMode(mode);
 
   setInterval(() => {
-    if (mode === 'my') renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
+    if (mode === 'my') { renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange); loadIncomingAsks(selectedName); }
     if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
   }, 60_000);
 }
