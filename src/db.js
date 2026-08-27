@@ -125,6 +125,26 @@ export async function markRequest(env, id, status, covererName) {
     .run();
 }
 
+// --- web push subscriptions (admin phone alerts) ---
+export async function savePushSubscription(env, sub) {
+  if (!sub || !sub.endpoint) return { error: 'no endpoint' };
+  await env.DB
+    .prepare(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at) VALUES (?,?,?,?)
+              ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth`)
+    .bind(sub.endpoint, sub.keys?.p256dh || null, sub.keys?.auth || null, new Date().toISOString())
+    .run();
+  return { ok: true };
+}
+
+export async function listPushSubscriptions(env) {
+  const { results } = await env.DB.prepare('SELECT endpoint, p256dh, auth FROM push_subscriptions').all();
+  return results;
+}
+
+export async function deletePushSubscription(env, endpoint) {
+  await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(endpoint).run();
+}
+
 // --- read-only SQL guard for AI-authored queries ---
 // The model composes a SELECT; this makes it structurally impossible for
 // that SELECT to mutate anything before it reaches D1.

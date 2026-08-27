@@ -8,7 +8,9 @@ import {
   planAddShift, planCancelShift, planEditShiftTime, coverageBySlot,
   replaceSchedule, getContacts, replaceContacts,
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
+  savePushSubscription, listPushSubscriptions, deletePushSubscription,
 } from './db.js';
+import { sendPush } from './push.js';
 
 const EVENT_ID = 'ibc-2026';
 
@@ -302,11 +304,46 @@ async function handleGetContacts(request, env) {
   return json(await getContacts(env, eventId));
 }
 
+// Best-effort push to any admin who enabled phone alerts. Never throws into
+// the request flow; prunes dead subscriptions.
+async function notifyAdmins(env) {
+  const subs = await listPushSubscriptions(env);
+  await Promise.all(subs.map(async (s) => {
+    try {
+      const r = await sendPush(env, s);
+      if (r.status === 404 || r.status === 410) await deletePushSubscription(env, s.endpoint);
+    } catch { /* push is best-effort */ }
+  }));
+}
+
+async function handlePushKey(env) {
+  return json({ key: env.VAPID_PUBLIC || '' });
+}
+
+// Only accept subscription endpoints on known push services over https -- so a
+// stored endpoint can't turn notifyAdmins into an arbitrary-URL fetch proxy.
+const ALLOWED_PUSH_HOSTS = [/\.googleapis\.com$/, /\.push\.apple\.com$/, /\.notify\.windows\.com$/, /\.mozilla\.com$/];
+function isAllowedPushEndpoint(endpoint) {
+  try {
+    const u = new URL(endpoint);
+    return u.protocol === 'https:' && ALLOWED_PUSH_HOSTS.some((re) => re.test(u.hostname));
+  } catch { return false; }
+}
+
+async function handlePushSubscribe(request, env) {
+  if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
+  const sub = await request.json();
+  if (!sub || !isAllowedPushEndpoint(sub.endpoint)) return json({ error: 'Invalid push endpoint.' }, 400);
+  const result = await savePushSubscription(env, sub);
+  if (result.error) return json({ error: result.error }, 400);
+  return json({ ok: true });
+}
+
 // Public (staff aren't logged in): submit a change request for your own shift.
 // Rate-limited per IP; never mutates the schedule -- only queues a proposal.
 const REQ_RATE_MAX = 15;
 const REQ_RATE_TTL = 600;
-async function handleCreateRequest(request, env) {
+async function handleCreateRequest(request, env, ctx) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   const key = `reqrate:${ip}`;
   const raw = await env.SCHEDULE_KV.get(key);
@@ -328,6 +365,7 @@ async function handleCreateRequest(request, env) {
     }[result.error] || 'Could not submit the request.';
     return json({ error: msg }, 400);
   }
+  if (ctx) ctx.waitUntil(notifyAdmins(env));
   return json({ ok: true, id: result.id });
 }
 
@@ -376,7 +414,7 @@ async function handleResolveRequest(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/schedule/') && request.method === 'GET') {
       return handleGetSchedule(url.pathname.split('/').pop(), env);
@@ -387,9 +425,11 @@ export default {
     if (url.pathname === '/api/admin/schedule-upload' && request.method === 'POST') return handleScheduleUpload(request, env);
     if (url.pathname === '/api/admin/contacts-upload' && request.method === 'POST') return handleContactsUpload(request, env);
     if (url.pathname === '/api/admin/contacts' && request.method === 'GET') return handleGetContacts(request, env);
-    if (url.pathname === '/api/requests' && request.method === 'POST') return handleCreateRequest(request, env);
+    if (url.pathname === '/api/requests' && request.method === 'POST') return handleCreateRequest(request, env, ctx);
     if (url.pathname === '/api/admin/requests' && request.method === 'GET') return handleListRequests(request, env);
     if (url.pathname === '/api/admin/requests/resolve' && request.method === 'POST') return handleResolveRequest(request, env);
+    if (url.pathname === '/api/push/vapid-public' && request.method === 'GET') return handlePushKey(env);
+    if (url.pathname === '/api/admin/push/subscribe' && request.method === 'POST') return handlePushSubscribe(request, env);
     return new Response('Not found', { status: 404 });
   },
 };

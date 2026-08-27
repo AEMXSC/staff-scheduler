@@ -38,8 +38,11 @@ root.innerHTML = `
   </div>
   <div class="admin-requests" id="admin-requests" hidden>
     <div class="admin-requests-head">
-      <h2 class="admin-section-title">Shift change requests</h2>
-      <button class="admin-refresh-btn" id="admin-requests-refresh">Refresh</button>
+      <h2 class="admin-section-title">Shift change requests <span class="admin-badge" id="admin-requests-badge" hidden>0</span></h2>
+      <div class="admin-requests-actions">
+        <button class="admin-refresh-btn" id="admin-push-btn">Enable phone alerts</button>
+        <button class="admin-refresh-btn" id="admin-requests-refresh">Refresh</button>
+      </div>
     </div>
     <div class="admin-requests-list" id="admin-requests-list"></div>
   </div>
@@ -63,6 +66,8 @@ const toolsEl = document.getElementById('admin-tools');
 const requestsPanel = document.getElementById('admin-requests');
 const requestsList = document.getElementById('admin-requests-list');
 const requestsRefresh = document.getElementById('admin-requests-refresh');
+const requestsBadge = document.getElementById('admin-requests-badge');
+const pushBtn = document.getElementById('admin-push-btn');
 const scheduleInput = document.getElementById('upload-schedule');
 const contactsInput = document.getElementById('upload-contacts');
 const toolStatus = document.getElementById('admin-tool-status');
@@ -75,12 +80,17 @@ try { token = sessionStorage.getItem(SESSION_KEY) || ''; } catch { /* noop */ }
 const MAX_HISTORY = 20;
 let history = [];
 
+let pollTimer = null;
+
 function showChat() {
   authEl.hidden = true;
   toolsEl.hidden = false;
   requestsPanel.hidden = false;
   chatEl.hidden = false;
-  loadRequestContext().then(loadRequests);
+  loadRequestContext().then(() => loadRequests(true));
+  // Live inbox: poll while the admin page is open so new requests surface
+  // without a manual refresh (Geneliz is "on the app" at the booth).
+  if (!pollTimer) pollTimer = setInterval(() => loadRequests(false), 20000);
   textarea.focus();
 }
 
@@ -492,18 +502,87 @@ function renderRequest(req) {
   return card;
 }
 
-async function loadRequests() {
-  requestsList.textContent = 'Loading…';
+let lastPendingCount = 0;
+let lastSig = null;
+let polledOnce = false;
+
+// Visual + audible cue when new requests arrive during a poll.
+function pingNewRequests() {
+  requestsPanel.classList.add('admin-requests-flash');
+  setTimeout(() => requestsPanel.classList.remove('admin-requests-flash'), 1200);
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.05;
+    o.start(); o.stop(ctx.currentTime + 0.15);
+  } catch { /* audio is best-effort (autoplay policy) */ }
+}
+
+async function loadRequests(force = false) {
   try {
     const resp = await fetch(`/api/admin/requests?eventId=${eventId}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!resp.ok) { requestsList.innerHTML = '<p class="hint">Could not load requests.</p>'; return; }
+    if (!resp.ok) { if (force) requestsList.innerHTML = '<p class="hint">Could not load requests.</p>'; return; }
     const reqs = await resp.json();
-    if (!Array.isArray(reqs) || !reqs.length) { requestsList.innerHTML = '<p class="hint">No pending requests.</p>'; return; }
+    const list = Array.isArray(reqs) ? reqs : [];
+
+    requestsBadge.hidden = list.length === 0;
+    requestsBadge.textContent = String(list.length);
+    if (polledOnce && list.length > lastPendingCount) pingNewRequests();
+    lastPendingCount = list.length;
+    polledOnce = true;
+
+    // Only rebuild the DOM when the set of pending requests actually changed,
+    // so a background poll never wipes an in-progress coverer selection.
+    const sig = list.map((r) => r.id).sort().join(',');
+    if (!force && sig === lastSig) return;
+    lastSig = sig;
+
+    if (!list.length) { requestsList.innerHTML = '<p class="hint">No pending requests.</p>'; return; }
     requestsList.innerHTML = '';
-    reqs.forEach((req) => requestsList.append(renderRequest(req)));
+    list.forEach((req) => requestsList.append(renderRequest(req)));
   } catch {
-    requestsList.innerHTML = '<p class="hint">Could not load requests.</p>';
+    if (force) requestsList.innerHTML = '<p class="hint">Could not load requests.</p>';
   }
 }
 
-requestsRefresh.addEventListener('click', () => loadRequestContext().then(loadRequests));
+requestsRefresh.addEventListener('click', () => loadRequestContext().then(() => loadRequests(true)));
+
+// --- web push opt-in (admin phone alerts) ---
+function urlB64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+  const base = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base);
+  return Uint8Array.from([...raw].map((ch) => ch.charCodeAt(0)));
+}
+
+async function enablePush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    pushBtn.textContent = 'Alerts not supported'; pushBtn.disabled = true; return;
+  }
+  pushBtn.disabled = true; pushBtn.textContent = 'Enabling…';
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { pushBtn.textContent = 'Alerts blocked'; return; }
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    const { key } = await (await fetch('/api/push/vapid-public')).json();
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(key) });
+    const resp = await fetch('/api/admin/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(sub),
+    });
+    pushBtn.textContent = resp.ok ? 'Phone alerts on ✓' : 'Try again';
+    pushBtn.disabled = resp.ok;
+  } catch {
+    pushBtn.textContent = 'Try again'; pushBtn.disabled = false;
+  }
+}
+
+pushBtn.addEventListener('click', enablePush);
+if ('Notification' in window && Notification.permission === 'granted') {
+  pushBtn.textContent = 'Phone alerts on ✓';
+}
