@@ -360,7 +360,9 @@ async function handlePushSubscribe(request, env) {
 // directed ask can push straight to them. Rate-limited + endpoint-allowlisted.
 async function handlePushSubscribeStaff(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const key = `reqrate:${ip}`;
+  // Own bucket so push opt-in doesn't share the shift-request quota (shared
+  // booth Wi-Fi would otherwise let alert-clicks lock out submissions).
+  const key = `pushrate:${ip}`;
   const raw = await env.SCHEDULE_KV.get(key);
   if (raw !== null && Number(raw) >= REQ_RATE_MAX) return json({ error: 'Too many requests — try again later.' }, 429);
   await env.SCHEDULE_KV.put(key, String((raw ? Number(raw) : 0) + 1), { expirationTtl: REQ_RATE_TTL });
@@ -403,7 +405,7 @@ async function handleCreateRequest(request, env, ctx) {
   // immediately; directed asks only after the target accepts).
   if (ctx && result.status === 'awaiting_admin') ctx.waitUntil(notifyAdmins(env));
   // Directed ask -> buzz the person who was asked.
-  if (ctx && result.status === 'awaiting_target') ctx.waitUntil(notifyStaff(env, body.targetName));
+  if (ctx && result.status === 'awaiting_target') ctx.waitUntil(notifyStaff(env, (body.targetName || '').trim()));
   return json({ ok: true, id: result.id, status: result.status });
 }
 
