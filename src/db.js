@@ -130,8 +130,12 @@ export async function listPendingRequests(env, eventId) {
 
 // Staff inbox: directed asks awaiting THIS person's accept/decline.
 export async function listRequestsForTarget(env, eventId, name) {
+  // Deliberately excludes `message`: this endpoint is public (no staff login),
+  // so the free-text reason is not exposed. The asked person sees who is asking
+  // and the shift, which is enough to accept/decline (and is already public
+  // schedule info). The reason stays admin-only.
   const { results } = await env.DB
-    .prepare(`SELECT id, requester_name, day, station, start_time, end_time, message
+    .prepare(`SELECT id, requester_name, day, station, start_time, end_time
               FROM change_requests WHERE event_id = ? AND status = 'awaiting_target' AND lower(target_name) = lower(?)
               ORDER BY created_at`)
     .bind(eventId, name)

@@ -195,7 +195,6 @@ async function main() {
       incomingAsksEl.innerHTML = asks.map((a) => `<div class="ask-card">
         <div class="ask-title">${escapeHtml(a.requester_name)} asked you to cover</div>
         <div class="ask-sub">${escapeHtml(a.station)} · ${escapeHtml(a.day)} ${fmt12(a.start_time)}–${fmt12(a.end_time)}</div>
-        ${a.message ? `<div class="ask-msg">${escapeHtml(a.message)}</div>` : ''}
         <div class="ask-actions">
           <button class="ask-accept" data-id="${a.id}">Accept</button>
           <button class="ask-decline" data-id="${a.id}">Decline</button>
