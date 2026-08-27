@@ -8,7 +8,7 @@ import {
   planAddShift, planCancelShift, planEditShiftTime, coverageBySlot,
   replaceSchedule, getContacts, replaceContacts, getDirectory,
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
-  listRequestsForTarget, respondToRequest, listRecentChanges,
+  listRequestsForTarget, respondToRequest, listRecentChanges, isKnownStaff,
   savePushSubscription, listPushSubscriptions, listStaffSubscriptions, deletePushSubscription,
 } from './db.js';
 import { sendPush } from './push.js';
@@ -399,6 +399,7 @@ async function handleCreateRequest(request, env, ctx) {
       noshift: 'That shift could not be found.',
       mismatch: 'You can only request changes to your own shift.',
       exists: 'There is already a pending change request for this shift.',
+      badtarget: 'Pick a person from the list — that name isn\'t on staff.',
     }[result.error] || 'Could not submit the request.';
     return json({ error: msg }, 400);
   }
@@ -422,6 +423,14 @@ async function handleRequestsForTarget(request, env) {
 // Public: the asked person accepts (applies the cover now + notifies the admin)
 // or declines.
 async function handleRespondRequest(request, env, ctx) {
+  // This is now a mutation path (accept applies) -> throttle per IP so directed
+  // swaps can't be scripted/hijacked at scale.
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const rlKey = `resprate:${ip}`;
+  const rlRaw = await env.SCHEDULE_KV.get(rlKey);
+  if (rlRaw !== null && Number(rlRaw) >= REQ_RATE_MAX) return json({ error: 'Too many attempts — try again later.' }, 429);
+  await env.SCHEDULE_KV.put(rlKey, String((rlRaw ? Number(rlRaw) : 0) + 1), { expirationTtl: REQ_RATE_TTL });
+
   const { id, name, action } = await request.json();
   if (!id || !name || (action !== 'accept' && action !== 'decline')) return json({ error: 'Bad request' }, 400);
   const result = await respondToRequest(env, id, name, action);
@@ -465,6 +474,7 @@ async function handleResolveRequest(request, env) {
 
   const coverer = (typeof covererName === 'string' && covererName.trim()) || req.target_name;
   if (!coverer) return json({ error: 'Choose who will cover before approving.' }, 400);
+  if (!(await isKnownStaff(env, req.event_id, coverer))) return json({ error: 'That coverer is not on the staff list.' }, 400);
   const plan = await planCoverShift(env, req.event_id, {
     shift_id: req.shift_id,
     coverer_name: coverer,

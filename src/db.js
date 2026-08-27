@@ -91,6 +91,17 @@ export async function replaceContacts(env, eventId, rows) {
 // --- staff-initiated change requests (proposals; admin approval applies them) ---
 const MAX_MESSAGE_LEN = 500;
 
+// Is `name` an actual staff member in this event? Guards against a request/cover
+// setting a shift's owner to an arbitrary string (the accept path auto-applies).
+export async function isKnownStaff(env, eventId, name) {
+  if (!name || !`${name}`.trim()) return false;
+  const r = await env.DB
+    .prepare('SELECT 1 FROM shifts WHERE event_id = ? AND lower(staff_name) = lower(?) LIMIT 1')
+    .bind(eventId, `${name}`.trim())
+    .first();
+  return !!r;
+}
+
 // Public path: a staff member requests a change to their OWN shift. We trust
 // the shift row (day/station/times) from the DB, not the client, and only
 // accept a request whose requester actually holds that shift.
@@ -113,6 +124,8 @@ export async function createRequest(env, eventId, { requesterName, shiftId, targ
     .first();
   if (open) return { error: 'exists' };
   const target = typeof targetName === 'string' && targetName.trim() ? targetName.trim().slice(0, 100) : null;
+  // A directed target auto-applies on accept, so it must be a real staff member.
+  if (target && !(await isKnownStaff(env, eventId, target))) return { error: 'badtarget' };
   const msg = typeof message === 'string' ? message.trim().slice(0, MAX_MESSAGE_LEN) : null;
   // Directed asks wait for the named person to accept first; open asks go
   // straight to the admin queue.
