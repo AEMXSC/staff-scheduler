@@ -43,8 +43,8 @@ self.addEventListener('push', (e) => {
       if (m) role = (await m.text()) || 'admin';
     } catch { /* default admin */ }
     const staff = role === 'staff';
-    await self.registration.showNotification(staff ? 'Shift cover request' : 'New shift-change request', {
-      body: staff ? 'Someone asked you to cover a shift — tap to open.' : 'Open Schedule Admin to review and approve.',
+    await self.registration.showNotification(staff ? 'Shift cover request' : 'Shift schedule update', {
+      body: staff ? 'Someone asked you to cover a shift — tap to open.' : 'A shift change needs you or was just made — tap to open.',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: 'shift-request',

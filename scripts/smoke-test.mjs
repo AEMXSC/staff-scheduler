@@ -77,11 +77,11 @@ async function main() {
     check('duplicate request for the same shift is blocked', dup.status === 400 || dup.status === 429, `status ${dup.status}`);
     const acc = await api('/api/requests/respond', { method: 'POST', body: { id: r1.data.id, name: coverA, action: 'accept' } });
     check('asked person accepts', acc.status === 200, acc.data?.message || `status ${acc.status}`);
+    check('accept auto-applies to the schedule', (await ownerOf(shift.id)) === coverA, `owner is now ${await ownerOf(shift.id)}`);
     const inbox1 = await api(`/api/admin/requests?eventId=${EVENT}`, { token });
-    check('accepted ask now in admin inbox', Array.isArray(inbox1.data) && inbox1.data.some((x) => x.id === r1.data.id), `${(inbox1.data || []).length} pending`);
-    const ap1 = await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: r1.data.id, action: 'approve' } });
-    check('admin approves', ap1.status === 200, ap1.data?.message || `status ${ap1.status}`);
-    check('schedule now shows the coverer', (await ownerOf(shift.id)) === coverA, `owner is now ${await ownerOf(shift.id)}`);
+    check('auto-applied ask is NOT left in the admin queue', Array.isArray(inbox1.data) && !inbox1.data.some((x) => x.id === r1.data.id), `${(inbox1.data || []).length} pending`);
+    const recent = await api(`/api/admin/requests/recent?eventId=${EVENT}`, { token });
+    check('applied change appears in Recently applied', Array.isArray(recent.data) && recent.data.some((x) => x.coverer_name === coverA), `${(recent.data || []).length} recent`);
 
     // 3b. Directed request the target DECLINES stays out of the admin inbox
     const rDec = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: coverA, shiftId: shift.id, targetName: ownerA } });
@@ -106,11 +106,11 @@ async function main() {
 
     // 6. Drift guard: shift changes after a request is filed -> stale approval blocked
     section('Drift guard (stale approval is blocked)');
-    // Two open asks (both go straight to the admin queue). Approve one to move
-    // the shift, then the other's approval must fail as stale.
+    // Open ask filed (snapshot owner = ownerA). Change the shift directly via the
+    // admin apply path (as if the admin edited it another way), then approving
+    // the now-stale ask must 409.
     const stale = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: null } });
-    const bump = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: null } });
-    await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: bump.data.id, action: 'approve', covererName: ownerB } }); // owner -> ownerB
+    await api('/api/admin/confirm', { method: 'POST', token, body: { pendingAction: { type: 'cover_shift', ids: [shift.id], expect: [{ staff_name: ownerA, station: shift.station, start_time: shift.start_time, end_time: shift.end_time }], coverer: ownerB } } });
     const staleAp = await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: stale.data.id, action: 'approve', covererName: coverA } });
     check('stale approval returns 409', staleAp.status === 409, `status ${staleAp.status}`);
     await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: stale.data.id, action: 'decline' } });

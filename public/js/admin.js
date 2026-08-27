@@ -46,6 +46,10 @@ root.innerHTML = `
     </div>
     <div class="admin-requests-list" id="admin-requests-list"></div>
   </div>
+  <div class="admin-recent" id="admin-recent" hidden>
+    <h2 class="admin-section-title">Recently applied</h2>
+    <div class="admin-recent-list" id="admin-recent-list"></div>
+  </div>
   <div class="admin-chat" id="admin-chat" hidden>
     <div class="admin-messages" id="admin-messages"></div>
     <div class="admin-input-bar">
@@ -68,6 +72,8 @@ const requestsList = document.getElementById('admin-requests-list');
 const requestsRefresh = document.getElementById('admin-requests-refresh');
 const requestsBadge = document.getElementById('admin-requests-badge');
 const pushBtn = document.getElementById('admin-push-btn');
+const recentPanel = document.getElementById('admin-recent');
+const recentList = document.getElementById('admin-recent-list');
 const scheduleInput = document.getElementById('upload-schedule');
 const contactsInput = document.getElementById('upload-contacts');
 const toolStatus = document.getElementById('admin-tool-status');
@@ -96,10 +102,10 @@ function showChat() {
   requestsPanel.hidden = false;
   chatEl.hidden = false;
   if (!messagesEl.children.length) addMessage('ai', CHAT_INTRO);
-  loadRequestContext().then(() => loadRequests(true));
-  // Live inbox: poll while the admin page is open so new requests surface
-  // without a manual refresh (Geneliz is "on the app" at the booth).
-  if (!pollTimer) pollTimer = setInterval(() => loadRequests(false), 20000);
+  loadRequestContext().then(() => { loadRequests(true); loadRecent(); });
+  // Live inbox: poll while the admin page is open so new requests + applied
+  // changes surface without a manual refresh (Geneliz is "on the app").
+  if (!pollTimer) pollTimer = setInterval(() => { loadRequests(false); loadRecent(); }, 20000);
   textarea.focus();
 }
 
@@ -437,7 +443,7 @@ async function resolveRequest(req, action, coverer, resultEl) {
         resultEl.append(document.createTextNode(' '), a);
       }
     }
-    setTimeout(loadRequests, 2500);
+    setTimeout(() => { loadRequests(); loadRecent(); }, 2500);
   } catch {
     resultEl.dataset.kind = 'err';
     resultEl.textContent = 'Network error.';
@@ -558,7 +564,26 @@ async function loadRequests(force = false) {
   }
 }
 
-requestsRefresh.addEventListener('click', () => loadRequestContext().then(() => loadRequests(true)));
+requestsRefresh.addEventListener('click', () => loadRequestContext().then(() => { loadRequests(true); loadRecent(); }));
+
+// Recently applied changes (auto-applied accepts + admin-approved open asks).
+async function loadRecent() {
+  try {
+    const resp = await fetch(`/api/admin/requests/recent?eventId=${eventId}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) return;
+    const rows = await resp.json();
+    if (!Array.isArray(rows) || !rows.length) { recentPanel.hidden = true; return; }
+    recentPanel.hidden = false;
+    recentList.innerHTML = '';
+    rows.forEach((r) => {
+      const d = document.createElement('div');
+      d.className = 'admin-recent-row';
+      d.textContent = `${r.coverer_name} now covers ${r.station} · ${r.day} ${r.start_time}-${r.end_time}`
+        + (r.requester_name ? ` (was ${r.requester_name})` : '');
+      recentList.append(d);
+    });
+  } catch { /* best-effort */ }
+}
 
 // --- web push opt-in (admin phone alerts) ---
 function urlB64ToUint8Array(b64) {

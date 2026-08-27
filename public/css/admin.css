@@ -64,6 +64,13 @@
   background: var(--surface-2); color: var(--text); font-family: inherit; font-size: 13px; cursor: pointer;
 }
 .admin-requests-list { display: flex; flex-direction: column; gap: 10px; }
+.admin-recent {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 14px;
+}
+.admin-recent-list { display: flex; flex-direction: column; }
+.admin-recent-row { font-size: 13px; color: var(--text-dim); padding: 7px 0; border-bottom: 1px solid var(--border); }
+.admin-recent-row:last-child { border-bottom: none; }
 .admin-request-card {
   background: var(--surface-2); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 12px 14px;
