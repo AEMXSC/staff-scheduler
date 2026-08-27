@@ -39,6 +39,41 @@
 .admin-tool-status[data-kind="ok"] { color: #2d9d78; }
 .admin-tool-status[data-kind="err"] { color: var(--accent); }
 
+.admin-requests {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.admin-requests-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.admin-section-title { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); }
+.admin-refresh-btn {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text); font-family: inherit; font-size: 13px; cursor: pointer;
+}
+.admin-requests-list { display: flex; flex-direction: column; gap: 10px; }
+.admin-request-card {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.admin-request-head { font-weight: 700; font-size: 14px; color: var(--text); }
+.admin-request-sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+.admin-request-msg { font-size: 13px; color: var(--text); margin-top: 6px; font-style: italic; }
+.admin-request-note { font-size: 12px; color: var(--floater); margin-top: 4px; }
+.admin-request-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.admin-coverer-select {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text); font-family: inherit; font-size: 13px;
+}
+.admin-request-result { margin: 8px 0 0; font-size: 13px; color: var(--text-dim); }
+.admin-request-result[data-kind="ok"] { color: #2d9d78; }
+.admin-request-result[data-kind="err"] { color: var(--accent); }
+.admin-sms-link {
+  display: inline-block; margin-left: 6px; padding: 4px 10px; border-radius: var(--radius-pill);
+  background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 700; font-size: 12px;
+}
+
 .admin-chat {
   display: flex;
   flex-direction: column;

@@ -3,6 +3,8 @@ import {
 } from './time-utils.js';
 import { getFreeFloaters } from './schedule.js';
 
+const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
+
 // "asking <target>" for a directed request; falls back to today's open
 // broadcast wording when no specific person is chosen.
 function buildShiftChangeMessage(name, assignment, windowStart, windowEnd, target) {
@@ -11,26 +13,6 @@ function buildShiftChangeMessage(name, assignment, windowStart, windowEnd, targe
     return `🔄 SHIFT CHANGE: ${name} needs ${assignment.station} covered ${time} — asking ${target}.`;
   }
   return `🔴 COVERAGE NEEDED: ${name} at ${assignment.station} — ${time}. Can anyone cover?`;
-}
-
-function openSlack(channel, message) {
-  const encoded = encodeURIComponent(message);
-  const deeplink = channel
-    ? `slack://app_redirect?channel=${encodeURIComponent(channel)}&message=${encoded}`
-    : null;
-  const weblink = channel
-    ? `https://slack.com/app_redirect?channel=${encodeURIComponent(channel)}`
-    : 'https://slack.com';
-
-  if (deeplink) {
-    const start = Date.now();
-    window.location.href = deeplink;
-    setTimeout(() => {
-      if (Date.now() - start < 2000) window.open(weblink, '_blank');
-    }, 1500);
-  } else {
-    window.open(weblink, '_blank');
-  }
 }
 
 // Builds the (initially hidden) Shift Change Request modal and returns
@@ -65,8 +47,9 @@ export function initShiftChangeModal(data, event) {
       </div>
       <label class="coverage-msg-label" for="cov-msg">Message</label>
       <textarea class="coverage-msg" id="cov-msg" rows="3"></textarea>
-      <button class="coverage-send" id="cov-send">Send to Slack Channel</button>
+      <button class="coverage-send" id="cov-send">Submit request</button>
       <button class="coverage-copy" id="cov-copy">Copy message instead</button>
+      <p class="coverage-status" id="cov-status"></p>
       <button class="coverage-close" aria-label="Close">✕</button>
     </div>`;
   document.body.append(modal);
@@ -78,6 +61,7 @@ export function initShiftChangeModal(data, event) {
   const msgEl = modal.querySelector('#cov-msg');
   const sendBtn = modal.querySelector('#cov-send');
   const copyBtn = modal.querySelector('#cov-copy');
+  const statusEl = modal.querySelector('#cov-status');
   const closeBtn = modal.querySelector('.coverage-close');
   const backdrop = modal.querySelector('.coverage-backdrop');
 
@@ -126,7 +110,44 @@ export function initShiftChangeModal(data, event) {
 
   closeBtn.addEventListener('click', closeModal);
   backdrop.addEventListener('click', closeModal);
-  sendBtn.addEventListener('click', () => openSlack(event.slackChannelId, msgEl.value));
+
+  async function submitRequest() {
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Submitting…';
+    statusEl.textContent = '';
+    try {
+      const resp = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId,
+          requesterName,
+          shiftId: assignment.id,
+          targetName: targetSel.value || null,
+          message: msgEl.value,
+        }),
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        statusEl.dataset.kind = 'ok';
+        statusEl.textContent = '✓ Request submitted — an admin will confirm coverage.';
+        sendBtn.textContent = 'Submitted';
+        setTimeout(closeModal, 1600);
+      } else {
+        statusEl.dataset.kind = 'err';
+        statusEl.textContent = data.error || 'Could not submit — try again.';
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Submit request';
+      }
+    } catch {
+      statusEl.dataset.kind = 'err';
+      statusEl.textContent = 'Network error — try again.';
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Submit request';
+    }
+  }
+
+  sendBtn.addEventListener('click', submitRequest);
 
   copyBtn.addEventListener('click', async () => {
     try {
@@ -156,6 +177,11 @@ export function initShiftChangeModal(data, event) {
     populateEndOptions();
     populateTargetOptions();
     refreshMessage();
+
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Submit request';
+    statusEl.textContent = '';
+    statusEl.dataset.kind = '';
 
     modal.hidden = false;
     msgEl.focus();

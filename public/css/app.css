@@ -368,6 +368,9 @@ body {
 .coverage-send:hover { filter: brightness(1.1); }
 .coverage-copy { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 .coverage-copy:hover { background: var(--gray-300); }
+.coverage-status { margin: 10px 0 0; font-size: 13px; min-height: 1em; color: var(--text-dim); }
+.coverage-status[data-kind="ok"] { color: #2d9d78; }
+.coverage-status[data-kind="err"] { color: var(--accent); }
 .coverage-close {
   position: absolute;
   top: 18px;

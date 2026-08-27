@@ -7,6 +7,7 @@ import {
   planReassign, planSwap, applyPending,
   planAddShift, planCancelShift, planEditShiftTime, coverageBySlot,
   replaceSchedule, getContacts, replaceContacts,
+  planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
 } from './db.js';
 
 const EVENT_ID = 'ibc-2026';
@@ -301,6 +302,79 @@ async function handleGetContacts(request, env) {
   return json(await getContacts(env, eventId));
 }
 
+// Public (staff aren't logged in): submit a change request for your own shift.
+// Rate-limited per IP; never mutates the schedule -- only queues a proposal.
+const REQ_RATE_MAX = 15;
+const REQ_RATE_TTL = 600;
+async function handleCreateRequest(request, env) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const key = `reqrate:${ip}`;
+  const raw = await env.SCHEDULE_KV.get(key);
+  if (raw !== null && Number(raw) >= REQ_RATE_MAX) return json({ error: 'Too many requests — try again later.' }, 429);
+  await env.SCHEDULE_KV.put(key, String((raw ? Number(raw) : 0) + 1), { expirationTtl: REQ_RATE_TTL });
+
+  const body = await request.json();
+  const result = await createRequest(env, body.eventId || EVENT_ID, {
+    requesterName: body.requesterName,
+    shiftId: body.shiftId,
+    targetName: body.targetName,
+    message: body.message,
+  });
+  if (result.error) {
+    const msg = {
+      noname: 'Please select your name first.',
+      noshift: 'That shift could not be found.',
+      mismatch: 'You can only request changes to your own shift.',
+    }[result.error] || 'Could not submit the request.';
+    return json({ error: msg }, 400);
+  }
+  return json({ ok: true, id: result.id });
+}
+
+async function handleListRequests(request, env) {
+  if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
+  const eventId = new URL(request.url).searchParams.get('eventId') || EVENT_ID;
+  return json(await listPendingRequests(env, eventId));
+}
+
+// Approve applies the change through the SAME drift-guarded apply path as the
+// AI confirm flow (cover_shift), then records the outcome. Decline just marks it.
+async function handleResolveRequest(request, env) {
+  if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
+  const { id, action, covererName } = await request.json();
+  if (!id || (action !== 'approve' && action !== 'decline')) return json({ error: 'Bad request' }, 400);
+  const req = await getRequestById(env, id);
+  if (!req) return json({ error: 'Request not found' }, 404);
+  if (req.status !== 'pending') return json({ error: 'That request was already resolved.' }, 409);
+
+  if (action === 'decline') {
+    await markRequest(env, id, 'declined', null);
+    return json({ message: 'Request declined.' });
+  }
+
+  const coverer = (typeof covererName === 'string' && covererName.trim()) || req.target_name;
+  if (!coverer) return json({ error: 'Choose who will cover before approving.' }, 400);
+  const plan = await planCoverShift(env, req.event_id, {
+    shift_id: req.shift_id,
+    coverer_name: coverer,
+    // Snapshot captured when the request was filed -- drift-guards against the
+    // shift being reassigned/edited between request and approval.
+    expect: {
+      staff_name: req.requester_name,
+      station: req.station,
+      start_time: req.start_time,
+      end_time: req.end_time,
+    },
+  });
+  if (plan.error === 'notfound') return json({ error: 'That shift no longer exists (the schedule may have been reloaded).' }, 409);
+  if (plan.error) return json({ error: 'Could not build the change.' }, 400);
+  const applied = await applyPending(env, plan.pending);
+  if (applied.drift) return json({ error: 'That shift changed since the request was made — review and retry.' }, 409);
+  if (applied.error) return json({ error: 'Could not apply the change.' }, 400);
+  await markRequest(env, id, 'approved', coverer);
+  return json({ message: `Approved — ${coverer} now covers ${req.station} ${req.start_time}-${req.end_time}.`, coverer });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -313,6 +387,9 @@ export default {
     if (url.pathname === '/api/admin/schedule-upload' && request.method === 'POST') return handleScheduleUpload(request, env);
     if (url.pathname === '/api/admin/contacts-upload' && request.method === 'POST') return handleContactsUpload(request, env);
     if (url.pathname === '/api/admin/contacts' && request.method === 'GET') return handleGetContacts(request, env);
+    if (url.pathname === '/api/requests' && request.method === 'POST') return handleCreateRequest(request, env);
+    if (url.pathname === '/api/admin/requests' && request.method === 'GET') return handleListRequests(request, env);
+    if (url.pathname === '/api/admin/requests/resolve' && request.method === 'POST') return handleResolveRequest(request, env);
     return new Response('Not found', { status: 404 });
   },
 };

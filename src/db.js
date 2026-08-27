@@ -1,7 +1,7 @@
 // D1 data layer. Reads for the staff-facing app and the AI's ad-hoc
 // queries; id-targeted writes for the admin confirm flow.
 
-const ROW_COLS = 'staff_name, day, date, start_time, end_time, station, is_floater, group_name';
+const ROW_COLS = 'id, staff_name, day, date, start_time, end_time, station, is_floater, group_name';
 
 // Times are zero-padded 'HH:MM' 24h everywhere -- text comparison, sorting,
 // and toMin() all rely on it. Normalize a write value to that form (accepting
@@ -76,6 +76,53 @@ export async function replaceContacts(env, eventId, rows) {
     ...clean.map((c) => insert.bind(...c)),
   ]);
   return { inserted: clean.length };
+}
+
+// --- staff-initiated change requests (proposals; admin approval applies them) ---
+const MAX_MESSAGE_LEN = 500;
+
+// Public path: a staff member requests a change to their OWN shift. We trust
+// the shift row (day/station/times) from the DB, not the client, and only
+// accept a request whose requester actually holds that shift.
+export async function createRequest(env, eventId, { requesterName, shiftId, targetName, message }) {
+  const name = typeof requesterName === 'string' ? requesterName.trim().slice(0, 100) : '';
+  const sid = Number(shiftId);
+  if (!name) return { error: 'noname' };
+  if (!Number.isInteger(sid)) return { error: 'noshift' };
+  const shift = await env.DB
+    .prepare('SELECT id, staff_name, day, station, start_time, end_time FROM shifts WHERE id = ? AND event_id = ?')
+    .bind(sid, eventId)
+    .first();
+  if (!shift) return { error: 'noshift' };
+  if (shift.staff_name.trim().toLowerCase() !== name.toLowerCase()) return { error: 'mismatch' };
+  const target = typeof targetName === 'string' && targetName.trim() ? targetName.trim().slice(0, 100) : null;
+  const msg = typeof message === 'string' ? message.trim().slice(0, MAX_MESSAGE_LEN) : null;
+  const res = await env.DB
+    .prepare(`INSERT INTO change_requests
+      (event_id, requester_name, shift_id, day, station, start_time, end_time, target_name, message, status, created_at)
+      VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?)`)
+    .bind(eventId, shift.staff_name, shift.id, shift.day, shift.station, shift.start_time, shift.end_time, target, msg, new Date().toISOString())
+    .run();
+  return { ok: true, id: res.meta?.last_row_id };
+}
+
+export async function listPendingRequests(env, eventId) {
+  const { results } = await env.DB
+    .prepare('SELECT * FROM change_requests WHERE event_id = ? AND status = ? ORDER BY created_at')
+    .bind(eventId, 'pending')
+    .all();
+  return results;
+}
+
+export async function getRequestById(env, id) {
+  return env.DB.prepare('SELECT * FROM change_requests WHERE id = ?').bind(id).first();
+}
+
+export async function markRequest(env, id, status, covererName) {
+  await env.DB
+    .prepare('UPDATE change_requests SET status = ?, coverer_name = ?, resolved_at = ? WHERE id = ?')
+    .bind(status, covererName || null, new Date().toISOString(), id)
+    .run();
 }
 
 // --- read-only SQL guard for AI-authored queries ---
@@ -264,7 +311,7 @@ export async function coverageBySlot(env, eventId, day, slotMin = 30) {
 async function verifyShiftsUnchanged(env, ids, expected) {
   const placeholders = ids.map(() => '?').join(',');
   const { results } = await env.DB
-    .prepare(`SELECT id, station, start_time, end_time FROM shifts WHERE id IN (${placeholders}) ORDER BY id`)
+    .prepare(`SELECT id, staff_name, station, start_time, end_time FROM shifts WHERE id IN (${placeholders}) ORDER BY id`)
     .bind(...ids)
     .all();
   if (results.length !== ids.length) return false;
@@ -293,6 +340,39 @@ async function setStations(env, ids, station) {
   await env.DB.prepare(`UPDATE shifts SET station = ? WHERE id IN (${placeholders})`)
     .bind(station, ...ids)
     .run();
+}
+
+async function setStaff(env, ids, staffName) {
+  const placeholders = ids.map(() => '?').join(',');
+  await env.DB.prepare(`UPDATE shifts SET staff_name = ? WHERE id IN (${placeholders})`)
+    .bind(staffName, ...ids)
+    .run();
+}
+
+// Reassign a single shift to a different PERSON (the op behind an approved
+// cover request). `expect` is the snapshot captured when the request was FILED
+// (owner/station/time) -- the drift guard compares the shift's CURRENT state to
+// that, so an approval is rejected if the shift changed in the meantime.
+export async function planCoverShift(env, eventId, { shift_id, coverer_name, expect }) {
+  if (!coverer_name) return { error: 'nocoverer' };
+  const r = await env.DB
+    .prepare('SELECT id FROM shifts WHERE id = ? AND event_id = ?')
+    .bind(shift_id, eventId)
+    .first();
+  if (!r) return { error: 'notfound' };
+  return {
+    pending: {
+      type: 'cover_shift',
+      ids: [shift_id],
+      expect: [{
+        staff_name: expect.staff_name,
+        station: expect.station,
+        start_time: expect.start_time,
+        end_time: expect.end_time,
+      }],
+      coverer: `${coverer_name}`,
+    },
+  };
 }
 
 export async function applyPending(env, pending) {
@@ -336,6 +416,11 @@ export async function applyPending(env, pending) {
       .bind(pending.new_start_time, pending.new_end_time, pending.ids[0])
       .run();
     return { updates: 1 };
+  }
+  if (pending.type === 'cover_shift') {
+    if (!(await verifyShiftsUnchanged(env, pending.ids, pending.expect))) return { drift: true };
+    await setStaff(env, pending.ids, pending.coverer);
+    return { updates: pending.ids.length };
   }
   return { error: true };
 }

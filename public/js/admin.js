@@ -1,5 +1,7 @@
 import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
 import { convertGrid } from './grid-convert.js';
+import { getFreeFloaters } from './schedule.js';
+import { toMins } from './time-utils.js';
 
 const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
 const SESSION_KEY = 'staff-scheduler-admin-token';
@@ -34,6 +36,13 @@ root.innerHTML = `
     </div>
     <p class="admin-tool-status" id="admin-tool-status"></p>
   </div>
+  <div class="admin-requests" id="admin-requests" hidden>
+    <div class="admin-requests-head">
+      <h2 class="admin-section-title">Shift change requests</h2>
+      <button class="admin-refresh-btn" id="admin-requests-refresh">Refresh</button>
+    </div>
+    <div class="admin-requests-list" id="admin-requests-list"></div>
+  </div>
   <div class="admin-chat" id="admin-chat" hidden>
     <div class="admin-messages" id="admin-messages"></div>
     <div class="admin-input-bar">
@@ -51,6 +60,9 @@ const messagesEl = document.getElementById('admin-messages');
 const textarea = document.getElementById('admin-textarea');
 const sendBtn = document.getElementById('admin-send');
 const toolsEl = document.getElementById('admin-tools');
+const requestsPanel = document.getElementById('admin-requests');
+const requestsList = document.getElementById('admin-requests-list');
+const requestsRefresh = document.getElementById('admin-requests-refresh');
 const scheduleInput = document.getElementById('upload-schedule');
 const contactsInput = document.getElementById('upload-contacts');
 const toolStatus = document.getElementById('admin-tool-status');
@@ -66,7 +78,9 @@ let history = [];
 function showChat() {
   authEl.hidden = true;
   toolsEl.hidden = false;
+  requestsPanel.hidden = false;
   chatEl.hidden = false;
+  loadRequestContext().then(loadRequests);
   textarea.focus();
 }
 
@@ -341,3 +355,155 @@ contactsInput.addEventListener('change', (e) => {
   if (file) uploadContacts(file);
   e.target.value = '';
 });
+
+// --- shift-change request inbox: approve applies via the server; decline closes ---
+
+let scheduleData = [];
+let contactsByName = {};
+let slackChannelId = '';
+
+async function loadRequestContext() {
+  try {
+    const [sched, contacts, ev] = await Promise.all([
+      fetch(`/api/schedule/${eventId}`).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/admin/contacts?eventId=${eventId}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/events/${eventId}.json`).then((r) => (r.ok ? r.json() : {})),
+    ]);
+    scheduleData = Array.isArray(sched) ? sched : [];
+    contactsByName = {};
+    (contacts || []).forEach((c) => { if (c.name) contactsByName[c.name.trim().toLowerCase()] = c; });
+    slackChannelId = ev.slackChannelId || '';
+  } catch { /* context is best-effort */ }
+}
+
+function smsLink(name, body) {
+  const c = contactsByName[(name || '').trim().toLowerCase()];
+  if (!c || !c.phone) return null;
+  return `sms:${c.phone.replace(/[^\d+]/g, '')}?body=${encodeURIComponent(body)}`;
+}
+
+async function resolveRequest(req, action, coverer, resultEl) {
+  resultEl.textContent = action === 'approve' ? 'Applying…' : 'Declining…';
+  try {
+    const resp = await fetch('/api/admin/requests/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id: req.id, action, covererName: coverer }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) { resultEl.dataset.kind = 'err'; resultEl.textContent = data.error || 'Failed.'; return; }
+    resultEl.dataset.kind = 'ok';
+    resultEl.textContent = data.message || 'Done.';
+    if (action === 'approve') {
+      const who = data.coverer || coverer;
+      const win = `${req.station} ${req.start_time}-${req.end_time}`;
+      const links = [
+        [req.requester_name, `Your ${win} shift on ${req.day} is covered by ${who}.`],
+        [who, `You're confirmed to cover ${win} on ${req.day} at IBC.`],
+      ];
+      links.forEach(([person, body]) => {
+        const href = smsLink(person, body);
+        if (!href) return;
+        const a = document.createElement('a');
+        a.className = 'admin-sms-link';
+        a.href = href;
+        a.textContent = `Text ${person}`;
+        resultEl.append(document.createTextNode(' '), a);
+      });
+      if (slackChannelId) {
+        const a = document.createElement('a');
+        a.className = 'admin-sms-link';
+        a.href = `slack://app_redirect?channel=${encodeURIComponent(slackChannelId)}`;
+        a.textContent = 'Open Slack';
+        resultEl.append(document.createTextNode(' '), a);
+      }
+    }
+    setTimeout(loadRequests, 2500);
+  } catch {
+    resultEl.dataset.kind = 'err';
+    resultEl.textContent = 'Network error.';
+  }
+}
+
+function renderRequest(req) {
+  const card = document.createElement('div');
+  card.className = 'admin-request-card';
+
+  const head = document.createElement('div');
+  head.className = 'admin-request-head';
+  head.textContent = `${req.requester_name} · ${req.station} · ${req.day} ${req.start_time}-${req.end_time}`;
+  card.append(head);
+
+  const ask = document.createElement('div');
+  ask.className = 'admin-request-sub';
+  ask.textContent = req.target_name ? `Asked: ${req.target_name}` : 'Open ask — anyone can cover';
+  card.append(ask);
+
+  const note = document.createElement('div');
+  note.className = 'admin-request-note';
+  note.textContent = 'Requester is self-reported — confirm before approving.';
+  card.append(note);
+
+  if (req.message) {
+    const m = document.createElement('div');
+    m.className = 'admin-request-msg';
+    m.textContent = req.message;
+    card.append(m);
+  }
+
+  const controls = document.createElement('div');
+  controls.className = 'admin-request-controls';
+
+  // Open ask needs a coverer pick; directed uses the named target.
+  let covererSelect = null;
+  if (!req.target_name) {
+    covererSelect = document.createElement('select');
+    covererSelect.className = 'admin-coverer-select';
+    const floaters = [...new Set(getFreeFloaters(scheduleData, req.day, toMins(req.start_time)).map((r) => r.staff_name))];
+    covererSelect.append(new Option('Choose coverer…', ''));
+    floaters.forEach((n) => covererSelect.append(new Option(n, n)));
+    controls.append(covererSelect);
+  }
+
+  const approve = document.createElement('button');
+  approve.className = 'admin-confirm-btn';
+  approve.textContent = 'Approve';
+  const decline = document.createElement('button');
+  decline.className = 'admin-cancel-btn';
+  decline.textContent = 'Decline';
+  controls.append(approve, decline);
+  card.append(controls);
+
+  const result = document.createElement('p');
+  result.className = 'admin-request-result';
+  card.append(result);
+
+  approve.addEventListener('click', () => {
+    const coverer = req.target_name || (covererSelect && covererSelect.value);
+    if (!coverer) { result.dataset.kind = 'err'; result.textContent = 'Choose who will cover first.'; return; }
+    approve.disabled = true; decline.disabled = true;
+    resolveRequest(req, 'approve', coverer, result);
+  });
+  decline.addEventListener('click', () => {
+    approve.disabled = true; decline.disabled = true;
+    resolveRequest(req, 'decline', null, result);
+  });
+
+  return card;
+}
+
+async function loadRequests() {
+  requestsList.textContent = 'Loading…';
+  try {
+    const resp = await fetch(`/api/admin/requests?eventId=${eventId}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) { requestsList.innerHTML = '<p class="hint">Could not load requests.</p>'; return; }
+    const reqs = await resp.json();
+    if (!Array.isArray(reqs) || !reqs.length) { requestsList.innerHTML = '<p class="hint">No pending requests.</p>'; return; }
+    requestsList.innerHTML = '';
+    reqs.forEach((req) => requestsList.append(renderRequest(req)));
+  } catch {
+    requestsList.innerHTML = '<p class="hint">Could not load requests.</p>';
+  }
+}
+
+requestsRefresh.addEventListener('click', () => loadRequestContext().then(loadRequests));
