@@ -1,0 +1,11 @@
+{
+  "name": "Demo Test",
+  "location": "Sandbox",
+  "timezone": "America/Edmonton",
+  "dataUrl": "/api/schedule/demo-test",
+  "slackChannelId": "",
+  "days": [
+    { "day": "Friday", "date": "2026-09-11" },
+    { "day": "Saturday", "date": "2026-09-12" }
+  ]
+}
