@@ -398,6 +398,7 @@ async function handleCreateRequest(request, env, ctx) {
       noname: 'Please select your name first.',
       noshift: 'That shift could not be found.',
       mismatch: 'You can only request changes to your own shift.',
+      exists: 'There is already a pending change request for this shift.',
     }[result.error] || 'Could not submit the request.';
     return json({ error: msg }, 400);
   }

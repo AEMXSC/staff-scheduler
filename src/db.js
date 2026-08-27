@@ -105,6 +105,13 @@ export async function createRequest(env, eventId, { requesterName, shiftId, targ
     .first();
   if (!shift) return { error: 'noshift' };
   if (shift.staff_name.trim().toLowerCase() !== name.toLowerCase()) return { error: 'mismatch' };
+  // One open request per shift: block a duplicate while one is still in flight
+  // (waiting on the target or on the admin).
+  const open = await env.DB
+    .prepare("SELECT id FROM change_requests WHERE event_id = ? AND shift_id = ? AND status IN ('awaiting_target','awaiting_admin')")
+    .bind(eventId, shift.id)
+    .first();
+  if (open) return { error: 'exists' };
   const target = typeof targetName === 'string' && targetName.trim() ? targetName.trim().slice(0, 100) : null;
   const msg = typeof message === 'string' ? message.trim().slice(0, MAX_MESSAGE_LEN) : null;
   // Directed asks wait for the named person to accept first; open asks go

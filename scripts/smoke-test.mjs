@@ -73,6 +73,8 @@ async function main() {
     check('directed ask is NOT in admin inbox yet', Array.isArray(beforeInbox.data) && !beforeInbox.data.some((x) => x.id === r1.data.id), 'waits for target');
     const forTarget = await api(`/api/requests/for?eventId=${EVENT}&name=${encodeURIComponent(coverA)}`);
     check('the asked person sees it', Array.isArray(forTarget.data) && forTarget.data.some((x) => x.id === r1.data.id), `${(forTarget.data || []).length} for ${coverA}`);
+    const dup = await api('/api/requests', { method: 'POST', body: { eventId: EVENT, requesterName: ownerA, shiftId: shift.id, targetName: coverA } });
+    check('duplicate request for the same shift is blocked', dup.status === 400 || dup.status === 429, `status ${dup.status}`);
     const acc = await api('/api/requests/respond', { method: 'POST', body: { id: r1.data.id, name: coverA, action: 'accept' } });
     check('asked person accepts', acc.status === 200, acc.data?.message || `status ${acc.status}`);
     const inbox1 = await api(`/api/admin/requests?eventId=${EVENT}`, { token });
