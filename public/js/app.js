@@ -62,6 +62,7 @@ async function main() {
         <button class="staff-alerts-btn" id="staff-alerts-btn" hidden>🔔 Enable phone alerts</button>
       </div>
       <div class="incoming-asks" id="incoming-asks"></div>
+      <div class="my-requests" id="my-requests"></div>
       <div class="my-slots"></div>
     </div>
     <div class="panel panel-now">
@@ -80,6 +81,7 @@ async function main() {
   const contactsPanel = root.querySelector('.panel-contacts');
   const mySlotsEl = root.querySelector('.my-slots');
   const incomingAsksEl = root.querySelector('#incoming-asks');
+  const myRequestsEl = root.querySelector('#my-requests');
   const dayPicker = root.querySelector('.day-picker');
   const nowContentEl = root.querySelector('.now-content');
   const contactsListEl = root.querySelector('#contacts-list');
@@ -110,7 +112,7 @@ async function main() {
     myPanel.classList.toggle('panel-hidden', mode !== 'my');
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
     contactsPanel.classList.toggle('panel-hidden', mode !== 'contacts');
-    if (mode === 'my') loadIncomingAsks(selectedName);
+    if (mode === 'my') { loadIncomingAsks(selectedName); loadMyRequests(selectedName); }
     if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
     if (mode === 'contacts') loadDirectory();
   }
@@ -180,6 +182,7 @@ async function main() {
     staffAlertsBtn.hidden = !name;
     renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
     loadIncomingAsks(selectedName);
+    loadMyRequests(selectedName);
   }
 
   // Staff opt-in to phone push, keyed to their name, so a directed ask buzzes them.
@@ -244,6 +247,29 @@ async function main() {
     } catch { incomingAsksEl.innerHTML = ''; }
   }
 
+  // The requester's own outgoing requests + their state (so a decline/approval
+  // is visible in-app even without push).
+  async function loadMyRequests(name) {
+    if (!name) { myRequestsEl.innerHTML = ''; return; }
+    try {
+      const rows = await (await fetch(`/api/requests/mine?eventId=${eventId}&name=${encodeURIComponent(name)}`)).json();
+      if (!Array.isArray(rows) || !rows.length) { myRequestsEl.innerHTML = ''; return; }
+      myRequestsEl.innerHTML = rows.map((r) => {
+        const who = escapeHtml(r.target_name || 'anyone');
+        const shift = `${escapeHtml(r.station)} · ${escapeHtml(r.day)} ${fmt12(r.start_time)}–${fmt12(r.end_time)}`;
+        let state = r.status;
+        if (r.status === 'awaiting_target') state = `waiting for ${who} to respond`;
+        else if (r.status === 'awaiting_admin') state = `${who} accepted — waiting for admin approval`;
+        else if (r.status === 'declined_by_target') state = `${who} declined — ask someone else`;
+        else if (r.status === 'approved') state = `covered by ${escapeHtml(r.coverer_name || r.target_name || 'someone')} ✓`;
+        return `<div class="myreq-card myreq-${r.status}">
+          <div class="myreq-shift">Your change request: ${shift}</div>
+          <div class="myreq-state">${state}</div>
+        </div>`;
+      }).join('');
+    } catch { myRequestsEl.innerHTML = ''; }
+  }
+
   function onSelectPerson(name) {
     nameInput.value = name;
     applyName(name);
@@ -277,7 +303,7 @@ async function main() {
   showMode(mode);
 
   setInterval(() => {
-    if (mode === 'my') { renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange); loadIncomingAsks(selectedName); }
+    if (mode === 'my') { renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange); loadIncomingAsks(selectedName); loadMyRequests(selectedName); }
     if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
   }, 60_000);
 }

@@ -8,7 +8,7 @@ import {
   planAddShift, planCancelShift, planEditShiftTime, coverageBySlot,
   replaceSchedule, getContacts, replaceContacts, getDirectory,
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
-  listRequestsForTarget, respondToRequest, listRecentChanges, isKnownStaff,
+  listRequestsForTarget, respondToRequest, listRecentChanges, isKnownStaff, listMyRequests,
   savePushSubscription, listPushSubscriptions, listStaffSubscriptions, deletePushSubscription,
 } from './db.js';
 import { sendPush } from './push.js';
@@ -437,18 +437,30 @@ async function handleRespondRequest(request, env, ctx) {
   if (result.error === 'notfound') return json({ error: 'Request not found.' }, 404);
   if (result.error === 'notpending') return json({ error: 'That request was already handled.' }, 409);
   if (result.error === 'mismatch') return json({ error: 'That request was not addressed to you.' }, 403);
-  if (result.error === 'drift' || result.error === 'shiftgone') return json({ error: 'That shift changed — ask an admin to sort it out.' }, 409);
   if (result.error) return json({ error: 'Could not respond.' }, 400);
-  if (action === 'decline') return json({ message: 'Declined.' });
-  // accepted + applied -> buzz the admin so they see the change (no approval needed)
+  if (action === 'decline') {
+    // let the requester know so they can ask someone else
+    if (ctx) ctx.waitUntil(notifyStaff(env, result.req.requester_name));
+    return json({ message: 'Declined.' });
+  }
+  // accepted -> to the admin queue to confirm; buzz the admin
   if (ctx) ctx.waitUntil(notifyAdmins(env));
-  return json({ message: "You're now covering that shift — the admin has been notified." });
+  return json({ message: 'Accepted — sent to the admin to confirm.' });
 }
 
 async function handleRecentChanges(request, env) {
   if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
   const eventId = new URL(request.url).searchParams.get('eventId') || EVENT_ID;
   return json(await listRecentChanges(env, eventId));
+}
+
+// Public: a requester's own outgoing requests + state (no other-person data).
+async function handleMyRequests(request, env) {
+  const url = new URL(request.url);
+  const eventId = url.searchParams.get('eventId') || EVENT_ID;
+  const name = url.searchParams.get('name') || '';
+  if (!name.trim()) return json([]);
+  return json(await listMyRequests(env, eventId, name));
 }
 
 async function handleListRequests(request, env) {
@@ -459,7 +471,7 @@ async function handleListRequests(request, env) {
 
 // Approve applies the change through the SAME drift-guarded apply path as the
 // AI confirm flow (cover_shift), then records the outcome. Decline just marks it.
-async function handleResolveRequest(request, env) {
+async function handleResolveRequest(request, env, ctx) {
   if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
   const { id, action, covererName } = await request.json();
   if (!id || (action !== 'approve' && action !== 'decline')) return json({ error: 'Bad request' }, 400);
@@ -493,6 +505,8 @@ async function handleResolveRequest(request, env) {
   if (applied.drift) return json({ error: 'That shift changed since the request was made — review and retry.' }, 409);
   if (applied.error) return json({ error: 'Could not apply the change.' }, 400);
   await markRequest(env, id, 'approved', coverer);
+  // Notify both parties that it's official.
+  if (ctx) { ctx.waitUntil(notifyStaff(env, req.requester_name)); ctx.waitUntil(notifyStaff(env, coverer)); }
   return json({ message: `Approved — ${coverer} now covers ${req.station} ${req.start_time}-${req.end_time}.`, coverer });
 }
 
@@ -514,9 +528,10 @@ export default {
     if (url.pathname === '/api/requests' && request.method === 'POST') return handleCreateRequest(request, env, ctx);
     if (url.pathname === '/api/requests/for' && request.method === 'GET') return handleRequestsForTarget(request, env);
     if (url.pathname === '/api/requests/respond' && request.method === 'POST') return handleRespondRequest(request, env, ctx);
+    if (url.pathname === '/api/requests/mine' && request.method === 'GET') return handleMyRequests(request, env);
     if (url.pathname === '/api/admin/requests' && request.method === 'GET') return handleListRequests(request, env);
     if (url.pathname === '/api/admin/requests/recent' && request.method === 'GET') return handleRecentChanges(request, env);
-    if (url.pathname === '/api/admin/requests/resolve' && request.method === 'POST') return handleResolveRequest(request, env);
+    if (url.pathname === '/api/admin/requests/resolve' && request.method === 'POST') return handleResolveRequest(request, env, ctx);
     if (url.pathname === '/api/push/vapid-public' && request.method === 'GET') return handlePushKey(env);
     if (url.pathname === '/api/admin/push/subscribe' && request.method === 'POST') return handlePushSubscribe(request, env);
     if (url.pathname === '/api/push/subscribe/staff' && request.method === 'POST') return handlePushSubscribeStaff(request, env);

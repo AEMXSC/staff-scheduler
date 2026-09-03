@@ -376,6 +376,12 @@ body {
 .staff-alerts-btn:disabled { opacity: 0.7; cursor: default; }
 
 .incoming-asks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.my-requests { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.myreq-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+.myreq-shift { font-size: 13px; color: var(--text); font-weight: 600; }
+.myreq-state { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+.myreq-declined_by_target .myreq-state { color: var(--accent); }
+.myreq-approved .myreq-state { color: #2d9d78; }
 .ask-card {
   background: var(--surface); border: 1px solid var(--accent);
   border-radius: var(--radius-md); padding: 12px 14px;

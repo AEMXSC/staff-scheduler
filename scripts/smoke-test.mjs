@@ -77,9 +77,12 @@ async function main() {
     check('duplicate request for the same shift is blocked', dup.status === 400 || dup.status === 429, `status ${dup.status}`);
     const acc = await api('/api/requests/respond', { method: 'POST', body: { id: r1.data.id, name: coverA, action: 'accept' } });
     check('asked person accepts', acc.status === 200, acc.data?.message || `status ${acc.status}`);
-    check('accept auto-applies to the schedule', (await ownerOf(shift.id)) === coverA, `owner is now ${await ownerOf(shift.id)}`);
+    check('not applied yet — waits for admin', (await ownerOf(shift.id)) === ownerA, `owner still ${await ownerOf(shift.id)}`);
     const inbox1 = await api(`/api/admin/requests?eventId=${EVENT}`, { token });
-    check('auto-applied ask is NOT left in the admin queue', Array.isArray(inbox1.data) && !inbox1.data.some((x) => x.id === r1.data.id), `${(inbox1.data || []).length} pending`);
+    check('accepted ask now in the admin queue', Array.isArray(inbox1.data) && inbox1.data.some((x) => x.id === r1.data.id), `${(inbox1.data || []).length} pending`);
+    const ap1 = await api('/api/admin/requests/resolve', { method: 'POST', token, body: { id: r1.data.id, action: 'approve' } });
+    check('admin approves', ap1.status === 200, ap1.data?.message || `status ${ap1.status}`);
+    check('schedule now shows the coverer', (await ownerOf(shift.id)) === coverA, `owner is now ${await ownerOf(shift.id)}`);
     const recent = await api(`/api/admin/requests/recent?eventId=${EVENT}`, { token });
     check('applied change appears in Recently applied', Array.isArray(recent.data) && recent.data.some((x) => x.coverer_name === coverA), `${(recent.data || []).length} recent`);
 

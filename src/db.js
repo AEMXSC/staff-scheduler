@@ -163,38 +163,34 @@ export async function listRequestsForTarget(env, eventId, name) {
   return results;
 }
 
-// The asked person accepts or declines. Accept = mutual consent (requester
-// asked + target agreed), so it APPLIES the cover immediately (drift-guarded)
-// and the admin is notified after the fact. Decline just closes it.
+// The asked person accepts (-> admin queue for approval) or declines (-> closed,
+// requester notified). Accept does NOT change the schedule; only the admin's
+// approve does, so the admin stays the final gate.
 export async function respondToRequest(env, id, name, action) {
   const r = await getRequestById(env, id);
   if (!r) return { error: 'notfound' };
   if (r.status !== 'awaiting_target') return { error: 'notpending' };
   if (!r.target_name || r.target_name.trim().toLowerCase() !== String(name || '').trim().toLowerCase()) return { error: 'mismatch' };
-
-  if (action === 'decline') {
-    await env.DB
-      .prepare('UPDATE change_requests SET status = ?, resolved_at = ? WHERE id = ?')
-      .bind('declined_by_target', new Date().toISOString(), id)
-      .run();
-    return { ok: true, status: 'declined_by_target' };
-  }
-
-  // accept -> apply now, guarding that the shift still matches what was asked
-  const plan = await planCoverShift(env, r.event_id, {
-    shift_id: r.shift_id,
-    coverer_name: r.target_name,
-    expect: { staff_name: r.requester_name, station: r.station, start_time: r.start_time, end_time: r.end_time },
-  });
-  if (plan.error) return { error: 'shiftgone' };
-  const applied = await applyPending(env, plan.pending);
-  if (applied.drift) return { error: 'drift' };
-  if (applied.error) return { error: 'applyfail' };
+  const status = action === 'accept' ? 'awaiting_admin' : 'declined_by_target';
   await env.DB
-    .prepare('UPDATE change_requests SET status = ?, coverer_name = ?, resolved_at = ? WHERE id = ?')
-    .bind('approved', r.target_name, new Date().toISOString(), id)
+    .prepare('UPDATE change_requests SET status = ?, resolved_at = ? WHERE id = ?')
+    .bind(status, action === 'accept' ? null : new Date().toISOString(), id)
     .run();
-  return { ok: true, status: 'approved', applied: true, req: r };
+  return { ok: true, status, req: r };
+}
+
+// A requester's own outgoing requests + their current state, so the app can
+// show "you asked X — waiting / accepted-pending-approval / declined / done".
+export async function listMyRequests(env, eventId, name) {
+  const { results } = await env.DB
+    .prepare(`SELECT id, target_name, day, station, start_time, end_time, status, coverer_name
+              FROM change_requests
+              WHERE event_id = ? AND lower(requester_name) = lower(?)
+                AND status IN ('awaiting_target','awaiting_admin','declined_by_target','approved')
+              ORDER BY COALESCE(resolved_at, created_at) DESC LIMIT 5`)
+    .bind(eventId, name)
+    .all();
+  return results;
 }
 
 // Recently applied changes (auto-applied accepts + admin-approved open asks),
