@@ -212,6 +212,14 @@ async function main() {
   }
   staffAlertsBtn.addEventListener('click', enableStaffPush);
 
+  // Auto-prompt for alerts the first time someone picks their name (a real user
+  // gesture), so they don't have to hunt for the button. Only when undecided.
+  function autoPromptAlerts() {
+    if (selectedName && 'Notification' in window && 'PushManager' in window && Notification.permission === 'default') {
+      enableStaffPush();
+    }
+  }
+
   // Directed asks waiting for THIS person to accept/decline (shown atop My Schedule).
   async function respondAsk(id, action, name) {
     const res = incomingAsksEl.querySelector(`[data-res="${id}"]`);
@@ -274,6 +282,7 @@ async function main() {
     nameInput.value = name;
     applyName(name);
     showMode('my');
+    autoPromptAlerts();
   }
 
   function buildSuggestions(filtered) {
@@ -294,7 +303,7 @@ async function main() {
   nameInput.addEventListener('blur', () => setTimeout(() => { suggestionsEl.hidden = true; }, 150));
   suggestionsEl.addEventListener('mousedown', (e) => {
     const opt = e.target.closest('.name-option');
-    if (opt) { nameInput.value = opt.dataset.name; applyName(opt.dataset.name); suggestionsEl.hidden = true; }
+    if (opt) { nameInput.value = opt.dataset.name; applyName(opt.dataset.name); suggestionsEl.hidden = true; autoPromptAlerts(); }
   });
   clearBtn.addEventListener('click', () => { nameInput.value = ''; applyName(''); nameInput.focus(); });
 

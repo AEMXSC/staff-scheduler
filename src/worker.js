@@ -10,8 +10,10 @@ import {
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
   listRequestsForTarget, respondToRequest, listRecentChanges, isKnownStaff, listMyRequests,
   savePushSubscription, listPushSubscriptions, listStaffSubscriptions, deletePushSubscription,
+  getContactEmail,
 } from './db.js';
 import { sendPush } from './push.js';
+import { slackDmByEmail } from './slack.js';
 
 const EVENT_ID = 'ibc-2026';
 
@@ -333,6 +335,17 @@ async function notifyStaff(env, name) {
   await pushAll(env, await listStaffSubscriptions(env, name));
 }
 
+// Reach a person on every available channel: app push (if they enabled it) and
+// a Slack DM (if a bot token is configured and we can resolve their email).
+async function pingPerson(env, eventId, name, text) {
+  if (!name) return;
+  await notifyStaff(env, name);
+  if (env.SLACK_BOT_TOKEN) {
+    const email = await getContactEmail(env, eventId, name);
+    if (email) await slackDmByEmail(env, email, text);
+  }
+}
+
 async function handlePushKey(env) {
   return json({ key: env.VAPID_PUBLIC || '' });
 }
@@ -406,8 +419,16 @@ async function handleCreateRequest(request, env, ctx) {
   // Only ping admins once a request actually reaches their queue (open asks
   // immediately; directed asks only after the target accepts).
   if (ctx && result.status === 'awaiting_admin') ctx.waitUntil(notifyAdmins(env));
-  // Directed ask -> buzz the person who was asked.
-  if (ctx && result.status === 'awaiting_target') ctx.waitUntil(notifyStaff(env, (body.targetName || '').trim()));
+  // Directed ask -> reach the person who was asked (push + Slack DM).
+  if (ctx && result.status === 'awaiting_target') {
+    ctx.waitUntil((async () => {
+      const rq = await getRequestById(env, result.id);
+      if (rq) {
+        await pingPerson(env, rq.event_id, rq.target_name,
+          `${rq.requester_name} asked you to cover ${rq.station} on ${rq.day} ${rq.start_time}-${rq.end_time}. Open the staff app to Accept or Decline.`);
+      }
+    })());
+  }
   return json({ ok: true, id: result.id, status: result.status });
 }
 
@@ -440,11 +461,20 @@ async function handleRespondRequest(request, env, ctx) {
   if (result.error) return json({ error: 'Could not respond.' }, 400);
   if (action === 'decline') {
     // let the requester know so they can ask someone else
-    if (ctx) ctx.waitUntil(notifyStaff(env, result.req.requester_name));
+    if (ctx) {
+      ctx.waitUntil(pingPerson(env, result.req.event_id, result.req.requester_name,
+        `${result.req.target_name} declined your ${result.req.station} ${result.req.day} shift request — you can ask someone else.`));
+    }
     return json({ message: 'Declined.' });
   }
-  // accepted -> to the admin queue to confirm; buzz the admin
-  if (ctx) ctx.waitUntil(notifyAdmins(env));
+  // accepted -> to the admin queue to confirm; buzz the admin (+ Slack if set)
+  if (ctx) {
+    ctx.waitUntil(notifyAdmins(env));
+    if (env.SLACK_BOT_TOKEN && env.SLACK_ADMIN_EMAIL) {
+      ctx.waitUntil(slackDmByEmail(env, env.SLACK_ADMIN_EMAIL,
+        `${result.req.target_name} accepted ${result.req.requester_name}'s ${result.req.station} ${result.req.day} shift — approve it in the admin app.`));
+    }
+  }
   return json({ message: 'Accepted — sent to the admin to confirm.' });
 }
 
@@ -505,8 +535,13 @@ async function handleResolveRequest(request, env, ctx) {
   if (applied.drift) return json({ error: 'That shift changed since the request was made — review and retry.' }, 409);
   if (applied.error) return json({ error: 'Could not apply the change.' }, 400);
   await markRequest(env, id, 'approved', coverer);
-  // Notify both parties that it's official.
-  if (ctx) { ctx.waitUntil(notifyStaff(env, req.requester_name)); ctx.waitUntil(notifyStaff(env, coverer)); }
+  // Notify both parties that it's official (push + Slack).
+  if (ctx) {
+    ctx.waitUntil(pingPerson(env, req.event_id, req.requester_name,
+      `Your ${req.station} ${req.day} ${req.start_time}-${req.end_time} shift is now covered by ${coverer}.`));
+    ctx.waitUntil(pingPerson(env, req.event_id, coverer,
+      `You're confirmed to cover ${req.station} on ${req.day} ${req.start_time}-${req.end_time}.`));
+  }
   return json({ message: `Approved — ${coverer} now covers ${req.station} ${req.start_time}-${req.end_time}.`, coverer });
 }
 

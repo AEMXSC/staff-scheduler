@@ -61,6 +61,15 @@ export async function getContacts(env, eventId) {
   return results;
 }
 
+// A person's email (for resolving their Slack account to DM them).
+export async function getContactEmail(env, eventId, name) {
+  const r = await env.DB
+    .prepare('SELECT email FROM contacts WHERE event_id = ? AND lower(name) = lower(?) LIMIT 1')
+    .bind(eventId, `${name}`.trim())
+    .first();
+  return r ? r.email : null;
+}
+
 // Staff-facing directory (name/title/email/phone/slack) -- the tap-to-Slack /
 // tap-to-call list. Excludes manager. Served on a public route by request.
 export async function getDirectory(env, eventId) {

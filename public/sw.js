@@ -1,7 +1,7 @@
 // Service worker for the IBC staff app. Network-first with a cache fallback:
 // online users always get fresh data (the schedule changes), offline users get
 // the last-seen version. Bump CACHE on any shell change to evict old assets.
-const CACHE = 'ibc-staff-v6';
+const CACHE = 'ibc-staff-v7';
 // Small cache holding this device's push role ('staff' | 'admin'), written by
 // the page on subscribe and read by the push handler. Kept across activations.
 const META_CACHE = 'push-meta';
