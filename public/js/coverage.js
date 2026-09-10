@@ -136,6 +136,8 @@ export function initShiftChangeModal(data, event) {
           shiftId: assignment.id,
           targetName: targetSel.value || null,
           message: msgEl.value,
+          requestedStart: startSel.value,
+          requestedEnd: endSel.value,
         }),
       });
       const data = await resp.json();

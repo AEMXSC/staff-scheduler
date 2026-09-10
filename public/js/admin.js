@@ -454,14 +454,23 @@ function renderRequest(req) {
   const card = document.createElement('div');
   card.className = 'admin-request-card';
 
+  // The window actually being handed off; falls back to the full shift for
+  // legacy requests filed before requested_start/end existed.
+  const covStart = req.requested_start || req.start_time;
+  const covEnd = req.requested_end || req.end_time;
+  const isPartial = covStart !== req.start_time || covEnd !== req.end_time;
+
   const head = document.createElement('div');
   head.className = 'admin-request-head';
-  head.textContent = `${req.requester_name} · ${req.station} · ${req.day} ${req.start_time}-${req.end_time}`;
+  head.textContent = `${req.requester_name} · ${req.station} · ${req.day} ${covStart}-${covEnd}`;
   card.append(head);
 
   const ask = document.createElement('div');
   ask.className = 'admin-request-sub';
-  ask.textContent = req.target_name ? `Asked: ${req.target_name}` : 'Open ask — anyone can cover';
+  const askWho = req.target_name ? `Asked: ${req.target_name}` : 'Open ask — anyone can cover';
+  ask.textContent = isPartial
+    ? `${askWho} · covers only ${covStart}-${covEnd} of ${req.start_time}-${req.end_time}`
+    : askWho;
   card.append(ask);
 
   const note = document.createElement('div');

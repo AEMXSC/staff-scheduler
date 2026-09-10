@@ -8,8 +8,10 @@ CREATE TABLE IF NOT EXISTS change_requests (
   shift_id       INTEGER,
   day            TEXT,
   station        TEXT,
-  start_time     TEXT,
+  start_time     TEXT,          -- the FULL shift's times (snapshot at filing)
   end_time       TEXT,
+  requested_start TEXT,         -- the sub-window to hand off (defaults to full shift)
+  requested_end   TEXT,
   target_name    TEXT,          -- null = open "anyone cover?" ask
   message        TEXT,
   status         TEXT NOT NULL DEFAULT 'pending',  -- pending | approved | declined

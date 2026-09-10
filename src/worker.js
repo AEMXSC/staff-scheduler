@@ -405,6 +405,8 @@ async function handleCreateRequest(request, env, ctx) {
     shiftId: body.shiftId,
     targetName: body.targetName,
     message: body.message,
+    requestedStart: body.requestedStart,
+    requestedEnd: body.requestedEnd,
   });
   if (result.error) {
     const msg = {
@@ -528,6 +530,9 @@ async function handleResolveRequest(request, env, ctx) {
       start_time: req.start_time,
       end_time: req.end_time,
     },
+    // The sub-window to hand off; falls back to the full shift for legacy
+    // requests filed before requested_start/end existed.
+    window: { start: req.requested_start, end: req.requested_end },
   });
   if (plan.error === 'notfound') return json({ error: 'That shift no longer exists (the schedule may have been reloaded).' }, 409);
   if (plan.error) return json({ error: 'Could not build the change.' }, 400);
@@ -535,14 +540,16 @@ async function handleResolveRequest(request, env, ctx) {
   if (applied.drift) return json({ error: 'That shift changed since the request was made — review and retry.' }, 409);
   if (applied.error) return json({ error: 'Could not apply the change.' }, 400);
   await markRequest(env, id, 'approved', coverer);
-  // Notify both parties that it's official (push + Slack).
+  // Notify both parties about the exact window that was handed off (not the
+  // whole shift -- a partial cover only moves the covered slice).
+  const cw = plan.pending.window;
   if (ctx) {
     ctx.waitUntil(pingPerson(env, req.event_id, req.requester_name,
-      `Your ${req.station} ${req.day} ${req.start_time}-${req.end_time} shift is now covered by ${coverer}.`));
+      `Your ${req.station} ${req.day} ${cw.start}-${cw.end} shift is now covered by ${coverer}.`));
     ctx.waitUntil(pingPerson(env, req.event_id, coverer,
-      `You're confirmed to cover ${req.station} on ${req.day} ${req.start_time}-${req.end_time}.`));
+      `You're confirmed to cover ${req.station} on ${req.day} ${cw.start}-${cw.end}.`));
   }
-  return json({ message: `Approved — ${coverer} now covers ${req.station} ${req.start_time}-${req.end_time}.`, coverer });
+  return json({ message: `Approved — ${coverer} now covers ${req.station} ${cw.start}-${cw.end}.`, coverer });
 }
 
 export default {

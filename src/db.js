@@ -114,7 +114,9 @@ export async function isKnownStaff(env, eventId, name) {
 // Public path: a staff member requests a change to their OWN shift. We trust
 // the shift row (day/station/times) from the DB, not the client, and only
 // accept a request whose requester actually holds that shift.
-export async function createRequest(env, eventId, { requesterName, shiftId, targetName, message }) {
+export async function createRequest(env, eventId, {
+  requesterName, shiftId, targetName, message, requestedStart, requestedEnd,
+}) {
   const name = typeof requesterName === 'string' ? requesterName.trim().slice(0, 100) : '';
   const sid = Number(shiftId);
   if (!name) return { error: 'noname' };
@@ -125,6 +127,10 @@ export async function createRequest(env, eventId, { requesterName, shiftId, targ
     .first();
   if (!shift) return { error: 'noshift' };
   if (shift.staff_name.trim().toLowerCase() !== name.toLowerCase()) return { error: 'mismatch' };
+  // The sub-window the requester actually wants handed off -- stored as
+  // structured data so approval can split the shift instead of reassigning the
+  // whole thing (defaults to the full shift when omitted/invalid).
+  const win = clampWindow(shift.start_time, shift.end_time, requestedStart, requestedEnd);
   // One open request per shift: block a duplicate while one is still in flight
   // (waiting on the target or on the admin).
   const open = await env.DB
@@ -141,9 +147,9 @@ export async function createRequest(env, eventId, { requesterName, shiftId, targ
   const status = target ? 'awaiting_target' : 'awaiting_admin';
   const res = await env.DB
     .prepare(`INSERT INTO change_requests
-      (event_id, requester_name, shift_id, day, station, start_time, end_time, target_name, message, status, created_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?, ?)`)
-    .bind(eventId, shift.staff_name, shift.id, shift.day, shift.station, shift.start_time, shift.end_time, target, msg, status, new Date().toISOString())
+      (event_id, requester_name, shift_id, day, station, start_time, end_time, requested_start, requested_end, target_name, message, status, created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?, ?)`)
+    .bind(eventId, shift.staff_name, shift.id, shift.day, shift.station, shift.start_time, shift.end_time, win.start, win.end, target, msg, status, new Date().toISOString())
     .run();
   return { ok: true, id: res.meta?.last_row_id, status };
 }
@@ -422,6 +428,36 @@ function toMin(hhmm) {
   return parseInt(hhmm.slice(0, 2), 10) * 60 + parseInt(hhmm.slice(3, 5), 10);
 }
 
+// Clamp a requested cover window to the shift it belongs to, defaulting to the
+// whole shift when the window is missing or nonsensical (start<end, inside the
+// shift bounds). Keeps createRequest and planCoverShift honest about the same
+// rule so a partial cover can never exceed the shift.
+export function clampWindow(shiftStart, shiftEnd, wantStart, wantEnd) {
+  const s = normalizeTime(wantStart);
+  const e = normalizeTime(wantEnd);
+  if (!s || !e || toMin(s) < toMin(shiftStart) || toMin(e) > toMin(shiftEnd) || toMin(s) >= toMin(e)) {
+    return { start: shiftStart, end: shiftEnd };
+  }
+  return { start: s, end: e };
+}
+
+// Pure: how a partial-timeframe cover splits one shift. The covered window is
+// reassigned to `coverer`; the original owner keeps any leading/trailing
+// remainder. A window spanning the whole shift yields no remainders (a plain
+// full reassign). Returned segments carry only the fields that change --
+// callers copy day/date/station/is_floater/group from the source row.
+export function computeCoverSegments(shift, coverer, window) {
+  const covered = { start: window.start, end: window.end, staff_name: coverer };
+  const remainders = [];
+  if (toMin(window.start) > toMin(shift.start_time)) {
+    remainders.push({ start: shift.start_time, end: window.start, staff_name: shift.staff_name });
+  }
+  if (toMin(window.end) < toMin(shift.end_time)) {
+    remainders.push({ start: window.end, end: shift.end_time, staff_name: shift.staff_name });
+  }
+  return { covered, remainders, whole: remainders.length === 0 };
+}
+
 export async function coverageBySlot(env, eventId, day, slotMin = 30) {
   const { results } = await env.DB
     .prepare('SELECT start_time, end_time FROM shifts WHERE event_id = ? AND day = ?')
@@ -486,13 +522,19 @@ async function setStaff(env, ids, staffName) {
 // cover request). `expect` is the snapshot captured when the request was FILED
 // (owner/station/time) -- the drift guard compares the shift's CURRENT state to
 // that, so an approval is rejected if the shift changed in the meantime.
-export async function planCoverShift(env, eventId, { shift_id, coverer_name, expect }) {
+export async function planCoverShift(env, eventId, {
+  shift_id, coverer_name, expect, window,
+}) {
   if (!coverer_name) return { error: 'nocoverer' };
   const r = await env.DB
     .prepare('SELECT id FROM shifts WHERE id = ? AND event_id = ?')
     .bind(shift_id, eventId)
     .first();
   if (!r) return { error: 'notfound' };
+  const win = clampWindow(
+    expect.start_time, expect.end_time,
+    window && window.start, window && window.end,
+  );
   return {
     pending: {
       type: 'cover_shift',
@@ -504,6 +546,7 @@ export async function planCoverShift(env, eventId, { shift_id, coverer_name, exp
         end_time: expect.end_time,
       }],
       coverer: `${coverer_name}`,
+      window: win,
     },
   };
 }
@@ -552,8 +595,30 @@ export async function applyPending(env, pending) {
   }
   if (pending.type === 'cover_shift') {
     if (!(await verifyShiftsUnchanged(env, pending.ids, pending.expect))) return { drift: true };
-    await setStaff(env, pending.ids, pending.coverer);
-    return { updates: pending.ids.length };
+    const shiftId = pending.ids[0];
+    const src = pending.expect[0];
+    // Default to the full shift for legacy pending actions that predate the
+    // requested-window field (keeps old queued approvals a plain reassign).
+    const window = pending.window || { start: src.start_time, end: src.end_time };
+    const seg = computeCoverSegments(src, pending.coverer, window);
+    if (seg.whole) {
+      await setStaff(env, [shiftId], pending.coverer);
+      return { updates: 1 };
+    }
+    // Partial cover: the original row becomes the covered window (reassigned to
+    // the coverer); the requester keeps each leading/trailing remainder as its
+    // own row, copying day/date/station/floater/group from the source shift.
+    await env.DB.prepare('UPDATE shifts SET staff_name = ?, start_time = ?, end_time = ? WHERE id = ?')
+      .bind(pending.coverer, seg.covered.start, seg.covered.end, shiftId)
+      .run();
+    for (const rem of seg.remainders) {
+      await env.DB.prepare(`INSERT INTO shifts
+        (event_id, staff_name, day, date, start_time, end_time, station, is_floater, group_name)
+        SELECT event_id, ?, day, date, ?, ?, station, is_floater, group_name FROM shifts WHERE id = ?`)
+        .bind(rem.staff_name, rem.start, rem.end, shiftId)
+        .run();
+    }
+    return { updates: 1 + seg.remainders.length };
   }
   return { error: true };
 }
