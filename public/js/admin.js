@@ -1,6 +1,6 @@
 import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
 import { convertGrid } from './grid-convert.js';
-import { getFreeFloaters } from './schedule.js';
+import { getFreeFloaters, overlappingShifts } from './schedule.js';
 import { toMins } from './time-utils.js';
 
 const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
@@ -487,6 +487,19 @@ function renderRequest(req) {
     card.append(m);
   }
 
+  // Soft heads-up when the proposed coverer already has a shift overlapping the
+  // covered window (a floater doubling up). Updates as the coverer is picked.
+  const warn = document.createElement('div');
+  warn.className = 'admin-request-warn';
+  warn.hidden = true;
+  const renderWarn = (name) => {
+    const clashes = overlappingShifts(scheduleData, name, req.day, covStart, covEnd, req.shift_id);
+    if (!clashes.length) { warn.hidden = true; warn.textContent = ''; return; }
+    const what = clashes.map((c) => `${c.station} ${c.start_time}-${c.end_time}${c.is_floater ? ' (floater)' : ''}`).join(', ');
+    warn.textContent = `⚠ ${name} is already on ${what} — overlaps this window.`;
+    warn.hidden = false;
+  };
+
   const controls = document.createElement('div');
   controls.className = 'admin-request-controls';
 
@@ -498,8 +511,12 @@ function renderRequest(req) {
     const floaters = [...new Set(getFreeFloaters(scheduleData, req.day, toMins(req.start_time)).map((r) => r.staff_name))];
     covererSelect.append(new Option('Choose coverer…', ''));
     floaters.forEach((n) => covererSelect.append(new Option(n, n)));
+    covererSelect.addEventListener('change', () => renderWarn(covererSelect.value));
     controls.append(covererSelect);
+  } else {
+    renderWarn(req.target_name);
   }
+  card.append(warn);
 
   const approve = document.createElement('button');
   approve.className = 'admin-confirm-btn';

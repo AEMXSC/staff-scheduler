@@ -69,6 +69,18 @@ export function getFreeFloaters(data, dayName, totalMins) {
   return rowsActiveAt(data, dayName, totalMins).filter((r) => r.is_floater);
 }
 
+// Shifts `name` already holds on `day` that overlap the window [start,end]
+// (HH:MM), excluding `excludeId` (the shift being covered). Powers the admin
+// warning that a proposed coverer is already on station in that window -- a
+// soft heads-up, since a floater doubling up can be intentional.
+export function overlappingShifts(data, name, day, start, end, excludeId) {
+  if (!name) return [];
+  const s = toMins(start);
+  const e = toMins(end);
+  return data.filter((r) => r.staff_name === name && r.day === day && r.id !== excludeId
+    && toMins(r.start_time) < e && s < toMins(r.end_time));
+}
+
 // onRequestChange(slot), if given, is called with the exact slot object
 // (not a re-derived guess) when its "Request change" button is clicked --
 // wired up by index after render, so no slot data has to round-trip through
