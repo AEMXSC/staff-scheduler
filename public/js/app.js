@@ -1,5 +1,5 @@
 import {
-  fetchScheduleData, getZonedNow, escapeHtml, fmt12,
+  fetchScheduleData, getZonedNow, escapeHtml, fmt12, getEventStatus, formatDateRange,
 } from './time-utils.js';
 import {
   getDaySlots, findSlotIdx, renderMySchedule, renderWhosOnNow,
@@ -36,15 +36,26 @@ async function main() {
   try { selectedName = localStorage.getItem(LS_NAME) || ''; } catch { /* noop */ }
   let mode = 'my';
 
+  const status = getEventStatus(event.days, event.timezone);
+  const dateRange = formatDateRange(event.days);
+
   root.innerHTML = `
     <header class="app-header">
-      <div class="brand-row">
-        <img class="brand-adobe-logo" src="/images/adobe-logo.svg" alt="Adobe">
-        <span class="brand-divider" aria-hidden="true"></span>
-        <img class="brand-ibc-logo" src="/images/ibc-logo-white.png" alt="IBC">
+      <div class="header-inner">
+        <div class="header-brand">
+          <div class="brand-row">
+            <img class="brand-adobe-logo" src="/images/adobe-logo.svg" alt="Adobe">
+            <span class="brand-divider" aria-hidden="true"></span>
+            <img class="brand-ibc-logo" src="/images/ibc-logo-white.png" alt="IBC">
+          </div>
+          <h1>${escapeHtml(event.name)}</h1>
+          <p class="app-sub">${escapeHtml(event.location || '')} · ${escapeHtml(dateRange)}</p>
+        </div>
+        <div class="header-status">
+          <span class="status-dot status-dot--${status.kind}" aria-hidden="true"></span>
+          <span class="status-text status-text--${status.kind}">${escapeHtml(status.text)}</span>
+        </div>
       </div>
-      <h1>${escapeHtml(event.name)}</h1>
-      <p class="app-sub">${escapeHtml(event.location || '')}</p>
     </header>
     <div class="toggle" role="group" aria-label="Schedule view">
       <button class="toggle-btn" data-mode="my">My Schedule</button>

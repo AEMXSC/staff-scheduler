@@ -47,6 +47,38 @@ export function fmt12(hhmm) {
   return m === 0 ? `${h12}${suffix}` : `${h12}:${String(m).padStart(2, '0')}${suffix}`;
 }
 
+// Live status line for the header bar ("Starts in 2 days" / "LIVE — Day 2
+// of 4 (Saturday)" / "Event complete — great work team!"), computed from the
+// event's own day list so it flips automatically as the event runs.
+export function getEventStatus(days, tz) {
+  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
+  const { dateStr } = getZonedNow(tz);
+  const first = sorted[0].date;
+  const last = sorted[sorted.length - 1].date;
+
+  if (dateStr < first) {
+    const daysOut = Math.round(
+      (new Date(`${first}T00:00:00`) - new Date(`${dateStr}T00:00:00`)) / 86400000,
+    );
+    return { text: daysOut <= 1 ? 'Starts tomorrow' : `Starts in ${daysOut} days`, kind: 'upcoming' };
+  }
+  if (dateStr > last) {
+    return { text: 'Event complete — great work team!', kind: 'complete' };
+  }
+  const todayIdx = sorted.findIndex((d) => d.date === dateStr);
+  return { text: `LIVE — Day ${todayIdx + 1} of ${sorted.length} (${sorted[todayIdx].day})`, kind: 'live' };
+}
+
+// "Sept 11–14" from a day list -- assumes a single-month span (true for
+// every event so far; revisit if one straddles a month boundary).
+export function formatDateRange(days) {
+  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
+  const start = new Date(`${sorted[0].date}T00:00:00`);
+  const end = new Date(`${sorted[sorted.length - 1].date}T00:00:00`);
+  const month = start.toLocaleDateString('en-US', { month: 'short' });
+  return start.getDate() === end.getDate() ? `${month} ${start.getDate()}` : `${month} ${start.getDate()}–${end.getDate()}`;
+}
+
 export async function fetchScheduleData(url) {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

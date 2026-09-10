@@ -67,7 +67,71 @@ body {
 
 /* ---- Header / branding ---- */
 
-.app-header { margin-bottom: 20px; }
+/* Full-bleed bar (breaks out of #app's max-width via the classic
+   100vw/-50vw technique) so desktop gets a proper header band instead of
+   small left-aligned text floating on an otherwise empty row -- the
+   .header-inner child re-applies the page's max-width/centering so its
+   content still lines up with the rest of the page. */
+.app-header {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  border-bottom: 3px solid var(--accent);
+}
+
+.header-inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 20px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* Live/upcoming/complete status pill -- desktop only; mobile's header stays
+   as compact as before since staff mostly hit this on phones. */
+.header-status { display: none; }
+@media (min-width: 900px) {
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 16px;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-dim);
+}
+.status-dot--live {
+  background: #2ecc71;
+  animation: status-pulse 2s infinite;
+}
+.status-dot--upcoming { background: var(--floater); }
+.status-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.status-text--live { color: var(--text); }
+
+@keyframes status-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.5); }
+  70% { box-shadow: 0 0 0 7px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+}
 
 .brand-row {
   display: flex;

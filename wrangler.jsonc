@@ -3,6 +3,7 @@
   "name": "staff-scheduler",
   "main": "src/worker.js",
   "compatibility_date": "2026-05-03",
+  "workers_dev": true,
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
@@ -12,6 +13,9 @@
   ],
   "d1_databases": [
     { "binding": "DB", "database_name": "staff-scheduler-db", "database_id": "aa1d1e4b-80b9-4bdc-9fbb-9a9022b14c5c" }
+  ],
+  "routes": [
+    { "pattern": "ibc.adobeschedule.com", "custom_domain": true }
   ],
   "vars": {
     "AZURE_OPENAI_DEPLOYMENT": "gpt-5.4-mini",
