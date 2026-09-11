@@ -253,7 +253,7 @@ async function main() {
       if (!Array.isArray(asks) || !asks.length) { incomingAsksEl.innerHTML = ''; return; }
       incomingAsksEl.innerHTML = asks.map((a) => `<div class="ask-card">
         <div class="ask-title">${escapeHtml(a.requester_name)} asked you to cover</div>
-        <div class="ask-sub">${escapeHtml(a.station)} · ${escapeHtml(a.day)} ${fmt12(a.start_time)}–${fmt12(a.end_time)}</div>
+        <div class="ask-sub">${escapeHtml(a.station)} · ${escapeHtml(a.day)} ${fmt12(a.requested_start || a.start_time)}–${fmt12(a.requested_end || a.end_time)}</div>
         <div class="ask-actions">
           <button class="ask-accept" data-id="${a.id}">Accept</button>
           <button class="ask-decline" data-id="${a.id}">Decline</button>
@@ -275,7 +275,11 @@ async function main() {
       if (!Array.isArray(rows) || !rows.length) { myRequestsEl.innerHTML = ''; return; }
       myRequestsEl.innerHTML = rows.map((r) => {
         const who = escapeHtml(r.target_name || 'anyone');
-        const shift = `${escapeHtml(r.station)} · ${escapeHtml(r.day)} ${fmt12(r.start_time)}–${fmt12(r.end_time)}`;
+        // Show the window the requester actually asked to hand off, not the full
+        // shift (falls back to the full shift for legacy rows with no window).
+        const covStart = r.requested_start || r.start_time;
+        const covEnd = r.requested_end || r.end_time;
+        const shift = `${escapeHtml(r.station)} · ${escapeHtml(r.day)} ${fmt12(covStart)}–${fmt12(covEnd)}`;
         let state = r.status;
         if (r.status === 'awaiting_target') state = `waiting for ${who} to respond`;
         else if (r.status === 'awaiting_admin') state = `${who} accepted — waiting for admin approval`;

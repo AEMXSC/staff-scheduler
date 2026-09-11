@@ -170,7 +170,7 @@ export async function listRequestsForTarget(env, eventId, name) {
   // and the shift, which is enough to accept/decline (and is already public
   // schedule info). The reason stays admin-only.
   const { results } = await env.DB
-    .prepare(`SELECT id, requester_name, day, station, start_time, end_time
+    .prepare(`SELECT id, requester_name, day, station, start_time, end_time, requested_start, requested_end
               FROM change_requests WHERE event_id = ? AND status = 'awaiting_target' AND lower(target_name) = lower(?)
               ORDER BY created_at`)
     .bind(eventId, name)
@@ -198,7 +198,7 @@ export async function respondToRequest(env, id, name, action) {
 // show "you asked X — waiting / accepted-pending-approval / declined / done".
 export async function listMyRequests(env, eventId, name) {
   const { results } = await env.DB
-    .prepare(`SELECT id, target_name, day, station, start_time, end_time, status, coverer_name
+    .prepare(`SELECT id, target_name, day, station, start_time, end_time, requested_start, requested_end, status, coverer_name
               FROM change_requests
               WHERE event_id = ? AND lower(requester_name) = lower(?)
                 AND status IN ('awaiting_target','awaiting_admin','declined_by_target','approved')
@@ -212,7 +212,7 @@ export async function listMyRequests(env, eventId, name) {
 // so the admin can see what happened without approving anything.
 export async function listRecentChanges(env, eventId) {
   const { results } = await env.DB
-    .prepare(`SELECT requester_name, coverer_name, day, station, start_time, end_time, resolved_at
+    .prepare(`SELECT requester_name, coverer_name, day, station, start_time, end_time, requested_start, requested_end, resolved_at
               FROM change_requests WHERE event_id = ? AND status = 'approved'
               ORDER BY resolved_at DESC LIMIT 10`)
     .bind(eventId)

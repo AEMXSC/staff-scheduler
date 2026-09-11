@@ -421,7 +421,7 @@ async function resolveRequest(req, action, coverer, resultEl) {
     resultEl.textContent = data.message || 'Done.';
     if (action === 'approve') {
       const who = data.coverer || coverer;
-      const win = `${req.station} ${req.start_time}-${req.end_time}`;
+      const win = `${req.station} ${req.requested_start || req.start_time}-${req.requested_end || req.end_time}`;
       const links = [
         [req.requester_name, `Your ${win} shift on ${req.day} is covered by ${who}.`],
         [who, `You're confirmed to cover ${win} on ${req.day} at IBC.`],
@@ -604,7 +604,7 @@ async function loadRecent() {
     rows.forEach((r) => {
       const d = document.createElement('div');
       d.className = 'admin-recent-row';
-      d.textContent = `${r.coverer_name} now covers ${r.station} · ${r.day} ${r.start_time}-${r.end_time}`
+      d.textContent = `${r.coverer_name} now covers ${r.station} · ${r.day} ${r.requested_start || r.start_time}-${r.requested_end || r.end_time}`
         + (r.requester_name ? ` (was ${r.requester_name})` : '');
       recentList.append(d);
     });
