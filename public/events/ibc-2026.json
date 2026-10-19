@@ -4,6 +4,8 @@
   "timezone": "Europe/Amsterdam",
   "dataUrl": "/api/schedule/ibc-2026",
   "slackChannelId": "",
+  "theme": { "accent": "#fa0c00", "accentInk": "#ffffff", "floater": "#e58b1e" },
+  "branding": { "logo": "/images/ibc-logo-white.png", "shortName": "IBC", "title": "IBC 2026 Staff Schedule" },
   "days": [
     { "day": "Friday", "date": "2026-09-11" },
     { "day": "Saturday", "date": "2026-09-12" },

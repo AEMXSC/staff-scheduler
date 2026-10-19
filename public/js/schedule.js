@@ -2,17 +2,18 @@ import {
   getZonedNow, toMins, fmt12, escapeHtml,
 } from './time-utils.js';
 
-// Fixed product order for the "Who's On Now" station grid (was alphabetical).
-const STATION_ORDER = [
+// IBC's fixed product order for the "Who's On Now" grid. Used as the default
+// when an event doesn't define its own `stationOrder` (so IBC keeps its order
+// with no config change). A new event supplies `stationOrder` (+ optional
+// `stationAliases`) in its event JSON; an empty array means "no fixed order"
+// (alphabetical), which is the interim for MAX until its station list is known.
+const IBC_STATION_ORDER = [
   'Premiere (Color)', 'Premiere (Generative Workflows)', 'Premiere (AI Audio)',
   'After Effects', 'Photoshop', 'Substance', 'Stock', 'Firefly + Video',
   'AI Assistant', 'Frame.io 1', 'Frame.io 2', 'Frame.io 3',
   'Firefly Enterprise (Meeting Room Lobby)',
 ];
-// Coarse / case / variant labels (Sat-Sun-Mon tabs + older data) map to the
-// slot they should sort as. Granular labels exist only on Friday. Every value
-// here must also appear in STATION_ORDER above, or the alias sorts to the end.
-const STATION_ALIASES = {
+const IBC_STATION_ALIASES = {
   'premiere (color)': 'Premiere (Color)',
   'premiere pro': 'Premiere (Color)',
   'premiere (ai - gen media & audio)': 'Premiere (Generative Workflows)',
@@ -20,13 +21,19 @@ const STATION_ALIASES = {
   'firefly e': 'Firefly Enterprise (Meeting Room Lobby)',
   'firefly e (mr)': 'Firefly Enterprise (Meeting Room Lobby)',
 };
-// Index into STATION_ORDER; unknown stations (Info Counter, data quirks) sort
-// to the end, then alphabetically via the comparator's tiebreak.
-function stationOrderIndex(station) {
-  const key = String(station).trim().toLowerCase();
-  const canonical = STATION_ALIASES[key] || STATION_ORDER.find((s) => s.toLowerCase() === key);
-  const i = canonical ? STATION_ORDER.indexOf(canonical) : -1;
-  return i === -1 ? STATION_ORDER.length : i;
+
+// Returns a station -> sort-index function for this event. Unknown stations sort
+// to the end (then alphabetically via the comparator tiebreak).
+function makeStationIndex(event) {
+  const custom = event && Array.isArray(event.stationOrder);
+  const order = custom ? event.stationOrder : IBC_STATION_ORDER;
+  const aliases = custom ? (event.stationAliases || {}) : IBC_STATION_ALIASES;
+  return (station) => {
+    const key = String(station).trim().toLowerCase();
+    const canonical = aliases[key] || order.find((s) => s.toLowerCase() === key);
+    const i = canonical ? order.indexOf(canonical) : -1;
+    return i === -1 ? order.length : i;
+  };
 }
 // Display-only prettification, casing-fixes ONLY (e.g. sheet says "Premiere
 // (COLOR)"). By design we do NOT unify the coarse Sat-Sun-Mon labels (Premiere
@@ -144,7 +151,10 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
   }
 }
 
-export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerson) {
+// Persisted across slot-nav re-renders so the filter isn't lost on ‹/›.
+let whosFilter = '';
+
+export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerson, event) {
   const daySlots = getDaySlots(data, dayName);
 
   if (!daySlots.length) {
@@ -158,22 +168,42 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
 
   const primaries = active.filter((r) => !r.is_floater);
   const floaters = getFreeFloaters(data, dayName, toMins(slot.start));
+  const stationIndex = makeStationIndex(event);
 
-  const byStation = new Map();
+  // Group station cards by booth/area (group_name). Area headers only show when
+  // there's more than one area, so small/ungrouped events look unchanged.
+  const areas = new Map(); // area -> Map(station -> rows)
   primaries.forEach((r) => {
+    const area = r.group || 'Other';
+    if (!areas.has(area)) areas.set(area, new Map());
+    const byStation = areas.get(area);
     if (!byStation.has(r.station)) byStation.set(r.station, []);
     byStation.get(r.station).push(r);
   });
+  const multiArea = areas.size > 1;
 
-  const stationCards = [...byStation.entries()]
-    .sort(([a], [b]) => (stationOrderIndex(a) - stationOrderIndex(b)) || a.localeCompare(b)).map(
-    ([station, rows]) => `<div class="station-card">
+  const cardFor = (station, rows) => {
+    const search = `${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
+    return `<div class="station-card" data-search="${escapeHtml(search)}">
       <div class="station-name">${escapeHtml(displayStation(station))}</div>
       <div class="station-people">${rows.map((r) => `<button class="chip chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</button>`).join('')}</div>
-    </div>`,
-  ).join('');
+    </div>`;
+  };
 
-  const floaterChips = floaters.map((r) => `<button class="chip chip-floater chip-link" data-name="${escapeHtml(r.staff_name)}" title="${escapeHtml(r.station)}">${escapeHtml(r.staff_name)}</button>`).join('');
+  const areaBlocks = [...areas.entries()]
+    .map(([area, byStation]) => {
+      const stations = [...byStation.entries()].sort(([a], [b]) => (stationIndex(a) - stationIndex(b)) || a.localeCompare(b));
+      const minIdx = Math.min(...stations.map(([s]) => stationIndex(s)));
+      return { area, stations, minIdx };
+    })
+    .sort((a, b) => (a.minIdx - b.minIdx) || a.area.localeCompare(b.area))
+    .map(({ area, stations }) => {
+      const cards = stations.map(([s, rows]) => cardFor(s, rows)).join('');
+      const header = multiArea ? `<h3 class="area-heading">${escapeHtml(area)}</h3>` : '';
+      return `${header}<div class="stations-grid">${cards}</div>`;
+    }).join('');
+
+  const floaterChips = floaters.map((r) => `<button class="chip chip-floater chip-link" data-search="${escapeHtml(`${r.staff_name} ${r.station}`.toLowerCase())}" data-name="${escapeHtml(r.staff_name)}" title="${escapeHtml(r.station)}">${escapeHtml(r.staff_name)}</button>`).join('');
 
   const canPrev = effectiveIdx > 0;
   const canNext = effectiveIdx < daySlots.length - 1;
@@ -184,15 +214,39 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
       <div class="slot-label">${fmt12(slot.start)}–${fmt12(slot.end)}</div>
       <button class="nav-btn" data-dir="1" aria-label="Next time slot" ${canNext ? '' : 'disabled'}>›</button>
     </div>
-    <div class="stations-grid">${stationCards || '<p class="hint">No one staffed at this time.</p>'}</div>
+    <input type="search" class="whos-search" id="whos-search" placeholder="Filter by station or person…" value="${escapeHtml(whosFilter)}" autocomplete="off" aria-label="Filter stations">
+    <div class="whos-areas">${areaBlocks || '<p class="hint">No one staffed at this time.</p>'}</div>
+    <p class="hint whos-noresults" hidden>No stations match that filter.</p>
     <div class="floater-panel">
       <div class="floater-panel-title">On backup (${floaters.length})</div>
       <div class="floater-chips">${floaterChips || '<span class="hint">No floaters scheduled this slot.</span>'}</div>
     </div>`;
 
+  const applyFilter = () => {
+    const q = whosFilter.trim().toLowerCase();
+    container.querySelectorAll('[data-search]').forEach((el) => {
+      el.hidden = !!q && !el.dataset.search.includes(q);
+    });
+    container.querySelectorAll('.area-heading').forEach((h) => {
+      const grid = h.nextElementSibling;
+      const anyVisible = grid && [...grid.querySelectorAll('.station-card')].some((c) => !c.hidden);
+      const hide = !!q && !anyVisible;
+      h.hidden = hide;
+      if (grid) grid.hidden = hide;
+    });
+    const noResults = container.querySelector('.whos-noresults');
+    if (noResults) {
+      const anyCard = [...container.querySelectorAll('.station-card')].some((c) => !c.hidden);
+      noResults.hidden = !(q && !anyCard);
+    }
+  };
+  const searchEl = container.querySelector('#whos-search');
+  if (searchEl) searchEl.addEventListener('input', () => { whosFilter = searchEl.value; applyFilter(); });
+  applyFilter();
+
   container.querySelectorAll('.nav-btn:not([disabled])').forEach((btn) => {
     btn.addEventListener('click', () => {
-      renderWhosOnNow(container, data, dayName, effectiveIdx + parseInt(btn.dataset.dir, 10), onSelectPerson);
+      renderWhosOnNow(container, data, dayName, effectiveIdx + parseInt(btn.dataset.dir, 10), onSelectPerson, event);
     });
   });
 

@@ -22,6 +22,9 @@
   --accent: #fa0c00;
   --accent-ink: #ffffff;
   --floater: #e58b1e;
+  /* Error/declined color, kept separate from --accent so a per-event accent
+     swap (e.g. MAX) doesn't recolor error states. */
+  --danger: #fa0c00;
 
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -324,6 +327,27 @@ body {
 .nav-btn[disabled] { opacity: 0.3; cursor: default; }
 .slot-label { font-weight: 700; font-size: 16px; }
 
+/* Station filter + area grouping for larger events (MAX). */
+.whos-search {
+  width: 100%;
+  padding: 11px 14px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px; /* >=16px so iOS doesn't zoom on focus */
+}
+.whos-search::placeholder { color: var(--text-dim); }
+.area-heading {
+  margin: 4px 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
 .stations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -444,7 +468,7 @@ body {
 .myreq-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
 .myreq-shift { font-size: 13px; color: var(--text); font-weight: 600; }
 .myreq-state { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
-.myreq-declined_by_target .myreq-state { color: var(--accent); }
+.myreq-declined_by_target .myreq-state { color: var(--danger); }
 .myreq-approved .myreq-state { color: #2d9d78; }
 .ask-card {
   background: var(--surface); border: 1px solid var(--accent);
@@ -490,7 +514,7 @@ body {
 
 .coverage-status { margin: 10px 0 0; font-size: 13px; min-height: 1em; color: var(--text-dim); }
 .coverage-status[data-kind="ok"] { color: #2d9d78; }
-.coverage-status[data-kind="err"] { color: var(--accent); }
+.coverage-status[data-kind="err"] { color: var(--danger); }
 .coverage-close {
   position: absolute;
   top: 18px;

@@ -2,8 +2,9 @@ import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
 import { convertGrid } from './grid-convert.js';
 import { getFreeFloaters, overlappingShifts } from './schedule.js';
 import { toMins } from './time-utils.js';
+import { resolveEventId, applyTheme, eventLogo } from './event-config.js';
 
-const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
+const eventId = resolveEventId();
 const SESSION_KEY = 'staff-scheduler-admin-token';
 
 const root = document.getElementById('admin-app');
@@ -12,7 +13,7 @@ root.innerHTML = `
     <div class="brand-row">
       <img class="brand-adobe-logo" src="/images/adobe-logo.svg" alt="Adobe">
       <span class="brand-divider" aria-hidden="true"></span>
-      <img class="brand-ibc-logo" src="/images/ibc-logo-white.png" alt="IBC">
+      <img class="brand-ibc-logo" alt="">
     </div>
     <h1>Schedule Admin</h1>
     <p class="app-sub">Ask questions or request changes — nothing is applied until you confirm it.</p>
@@ -57,6 +58,19 @@ root.innerHTML = `
       <button id="admin-send" class="admin-send-btn" disabled>Send</button>
     </div>
   </div>`;
+
+// Theme the admin page (incl. the auth screen) from the event config on load.
+let eventShortName = 'the event';
+(async () => {
+  try {
+    const ev = await (await fetch(`/events/${eventId}.json`)).json();
+    applyTheme(ev);
+    eventShortName = (ev.branding && ev.branding.shortName) || ev.name || eventShortName;
+    const logo = eventLogo(ev);
+    const img = root.querySelector('.brand-ibc-logo');
+    if (img) { img.src = logo.src; img.alt = logo.alt; }
+  } catch { /* keep default branding */ }
+})();
 
 const authEl = document.getElementById('admin-auth');
 const passInput = document.getElementById('admin-pass');
@@ -424,7 +438,7 @@ async function resolveRequest(req, action, coverer, resultEl) {
       const win = `${req.station} ${req.requested_start || req.start_time}-${req.requested_end || req.end_time}`;
       const links = [
         [req.requester_name, `Your ${win} shift on ${req.day} is covered by ${who}.`],
-        [who, `You're confirmed to cover ${win} on ${req.day} at IBC.`],
+        [who, `You're confirmed to cover ${win} on ${req.day} at ${eventShortName}.`],
       ];
       links.forEach(([person, body]) => {
         const href = smsLink(person, body);
@@ -508,9 +522,25 @@ function renderRequest(req) {
   if (!req.target_name) {
     covererSelect = document.createElement('select');
     covererSelect.className = 'admin-coverer-select';
-    const floaters = [...new Set(getFreeFloaters(scheduleData, req.day, toMins(req.start_time)).map((r) => r.staff_name))];
     covererSelect.append(new Option('Choose coverer…', ''));
-    floaters.forEach((n) => covererSelect.append(new Option(n, n)));
+    // Any staff member can cover, not just floaters (field feedback). Floaters on
+    // backup this slot are grouped first; the double-booking warning below flags
+    // a pick who already has an overlapping shift.
+    const floaterNames = [...new Set(getFreeFloaters(scheduleData, req.day, toMins(req.start_time)).map((r) => r.staff_name).filter(Boolean))]
+      .filter((n) => n !== req.requester_name).sort();
+    const floaterSet = new Set(floaterNames);
+    const others = [...new Set(scheduleData.map((r) => r.staff_name).filter(Boolean))].sort()
+      .filter((n) => !floaterSet.has(n) && n !== req.requester_name);
+    if (floaterNames.length) {
+      const g = document.createElement('optgroup'); g.label = 'On backup now';
+      floaterNames.forEach((n) => g.append(new Option(n, n)));
+      covererSelect.append(g);
+    }
+    if (others.length) {
+      const g = document.createElement('optgroup'); g.label = 'Everyone else';
+      others.forEach((n) => g.append(new Option(n, n)));
+      covererSelect.append(g);
+    }
     covererSelect.addEventListener('change', () => renderWarn(covererSelect.value));
     controls.append(covererSelect);
   } else {

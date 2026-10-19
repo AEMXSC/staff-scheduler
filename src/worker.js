@@ -43,7 +43,21 @@ function fullDumpText(schedule) {
     .join('\n');
 }
 
-function systemPrompt(eventId, days, digest, fullDump) {
+// Event-window sentence for the AI prompt, derived from the event config (tz,
+// location, day range) instead of hardcoded Amsterdam/IBC dates.
+function eventWindowLine(meta, days) {
+  const loc = meta.location || 'the venue';
+  const tz = meta.timezone || 'local time';
+  const d = Array.isArray(meta.days) ? meta.days : [];
+  const range = d.length
+    ? `runs ${d[0].day} ${d[0].date} to ${d[d.length - 1].day} ${d[d.length - 1].date}`
+    : `covers these days: ${days.join(', ')}`;
+  return `The event ${range} in ${loc} (${tz}); day column holds the weekday name and times are local HH:MM. `
+    + `For "who is on now/next", map the current ${loc} (${tz}) date to that weekday and compare local times; `
+    + 'if today is outside the event window, say so rather than guessing.\n\n';
+}
+
+function systemPrompt(eventId, days, digest, fullDump, meta = {}) {
   let p = 'You are the scheduling assistant for a staff event. Answer questions and propose changes concisely.\n\n'
     + 'You have run_sql: compose ONE read-only SQLite SELECT per call, and you MAY call it multiple times in a turn '
     + '-- query, read the result, query again if needed, then give your answer. '
@@ -70,10 +84,7 @@ function systemPrompt(eventId, days, digest, fullDump) {
     + '- use it for any "phone/email/slack/title/role/manager/how do I reach <person, or the person on <station> '
     + 'that day>" question; title is their badge title, manager is their manager\'s name (look that manager up in '
     + 'contacts for their email); a person may be in contacts but have some fields blank\n\n'
-    + `Current time is ${new Date().toISOString()} (UTC). The event runs Fri 2026-09-11 to Mon 2026-09-14 in `
-    + 'Amsterdam (CEST = UTC+2); day column holds the weekday name and times are local HH:MM. For "who is on '
-    + 'now/next", map the current Amsterdam date to that weekday and compare local times; if today is outside '
-    + 'the event window, say so rather than guessing.\n\n'
+    + `Current time is ${new Date().toISOString()} (UTC). ${eventWindowLine(meta, days)}`
     + `Dataset digest: ${digest}\n\n`
     + 'To change the schedule use the write tools -- reassign_station, swap_people, add_shift, cancel_shift, '
     + 'edit_shift_time -- you never write directly, a human confirms each proposal. When a person has several '
@@ -213,6 +224,7 @@ async function handleChat(request, env) {
 
   const { messages, eventId } = await request.json();
   if (!Array.isArray(messages) || !messages.length) return json({ error: 'Missing messages' }, 400);
+  if (!/^[a-z0-9-]{1,64}$/i.test(eventId || '')) return json({ error: 'Bad event' }, 400);
   const history = messages
     .filter((m) => typeof m?.content === 'string' && m.content)
     .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
@@ -222,8 +234,14 @@ async function handleChat(request, env) {
   const fullDump = schedule.length < FULL_DUMP_THRESHOLD ? fullDumpText(schedule) : null;
   const tools = buildTools(days);
 
+  let meta = {};
+  try {
+    const r = await env.ASSETS.fetch(new Request(new URL(`/events/${eventId}.json`, request.url)));
+    if (r.ok) meta = await r.json();
+  } catch { /* best-effort; prompt falls back to the day list */ }
+
   const convo = [
-    { role: 'system', content: systemPrompt(eventId, days, scheduleDigest(schedule), fullDump) },
+    { role: 'system', content: systemPrompt(eventId, days, scheduleDigest(schedule), fullDump, meta) },
     ...history,
   ];
 

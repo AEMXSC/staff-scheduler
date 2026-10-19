@@ -5,9 +5,12 @@ import {
   getDaySlots, findSlotIdx, renderMySchedule, renderWhosOnNow,
 } from './schedule.js';
 import { initShiftChangeModal } from './coverage.js';
+import { resolveEventId, applyTheme, eventLogo } from './event-config.js';
 
-const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
-const LS_NAME = 'staff-scheduler-name';
+const eventId = resolveEventId();
+// Per-event so a shared origin (preview/localhost/?event= switching) doesn't
+// read back the other event's selected name.
+const LS_NAME = `staff-scheduler-name:${eventId}`;
 
 function urlB64ToUint8Array(b64) {
   const pad = '='.repeat((4 - (b64.length % 4)) % 4);
@@ -29,11 +32,13 @@ async function main() {
     return;
   }
 
-  document.title = `${event.name} · Schedule`;
+  applyTheme(event);
+  const logo = eventLogo(event);
 
   const names = [...new Set(data.map((r) => r.staff_name).filter(Boolean))].sort();
   let selectedName = '';
   try { selectedName = localStorage.getItem(LS_NAME) || ''; } catch { /* noop */ }
+  if (selectedName && !names.includes(selectedName)) selectedName = ''; // stale/other-event name
   let mode = 'my';
 
   const status = getEventStatus(event.days, event.timezone);
@@ -46,7 +51,7 @@ async function main() {
           <div class="brand-row">
             <img class="brand-adobe-logo" src="/images/adobe-logo.svg" alt="Adobe">
             <span class="brand-divider" aria-hidden="true"></span>
-            <img class="brand-ibc-logo" src="/images/ibc-logo-white.png" alt="IBC">
+            <img class="brand-ibc-logo" src="${escapeHtml(logo.src)}" alt="${escapeHtml(logo.alt)}">
           </div>
           <h1>${escapeHtml(event.name)}</h1>
           <p class="app-sub">${escapeHtml(event.location || '')} · ${escapeHtml(dateRange)}</p>
@@ -113,7 +118,7 @@ async function main() {
     btn.addEventListener('click', () => {
       displayDay = btn.dataset.day;
       dayPicker.querySelectorAll('.day-btn').forEach((b) => b.classList.toggle('day-btn-active', b.dataset.day === displayDay));
-      renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
+      renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson, event);
     });
   });
 
@@ -124,7 +129,7 @@ async function main() {
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
     contactsPanel.classList.toggle('panel-hidden', mode !== 'contacts');
     if (mode === 'my') { loadIncomingAsks(selectedName); loadMyRequests(selectedName); }
-    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
+    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson, event);
     if (mode === 'contacts') loadDirectory();
   }
 
@@ -328,7 +333,11 @@ async function main() {
 
   setInterval(() => {
     if (mode === 'my') { renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange); loadIncomingAsks(selectedName); loadMyRequests(selectedName); }
-    if (mode === 'now') renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson);
+    // Don't re-render Who's-On-Now while the user is typing in the filter (it
+    // would rebuild the input and lose focus mid-keystroke).
+    if (mode === 'now' && document.activeElement?.id !== 'whos-search') {
+      renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson, event);
+    }
   }, 60_000);
 }
 

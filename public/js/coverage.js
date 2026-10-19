@@ -1,9 +1,10 @@
 import {
   toMins, fmt12, escapeHtml, timeRangeSteps,
 } from './time-utils.js';
-import { getFreeFloaters } from './schedule.js';
+import { getFreeFloaters, overlappingShifts } from './schedule.js';
+import { resolveEventId } from './event-config.js';
 
-const eventId = new URLSearchParams(window.location.search).get('event') || 'ibc-2026';
+const eventId = resolveEventId();
 
 // Look up a person's phone from the public directory (cached) to build the
 // requester's one-tap "text them" nudge.
@@ -90,13 +91,31 @@ export function initShiftChangeModal(data, event) {
     );
   }
 
+  // Candidates are ALL staff, not just floaters (per field feedback — people
+  // on-site for meetings can cover too). Floaters on backup this slot are grouped
+  // first; everyone else follows, flagged if they already have an overlapping
+  // shift. A native select stays mobile-friendly and searchable at MAX scale.
   function populateTargetOptions() {
-    const names = [...new Set(
-      getFreeFloaters(data, assignment.day, toMins(startSel.value)).map((r) => r.staff_name),
-    )];
-    targetSel.innerHTML = ['<option value="">Anyone / open ask</option>']
-      .concat(names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`))
+    const prev = targetSel.value; // keep the chosen coverer across repopulate
+    const start = startSel.value;
+    const end = endSel.value;
+    const floaterNames = new Set(
+      getFreeFloaters(data, assignment.day, toMins(start))
+        .map((r) => r.staff_name).filter(Boolean).filter((n) => n !== requesterName),
+    );
+    const allNames = [...new Set(data.map((r) => r.staff_name).filter(Boolean))].sort();
+    const others = allNames.filter((n) => !floaterNames.has(n) && n !== requesterName);
+    const opt = (n, booked) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}${booked ? ' — already booked' : ''}</option>`;
+
+    const floaterOpts = [...floaterNames].sort().map((n) => opt(n, false)).join('');
+    const otherOpts = others
+      .map((n) => opt(n, overlappingShifts(data, n, assignment.day, start, end).length > 0))
       .join('');
+
+    targetSel.innerHTML = '<option value="">Anyone / open ask</option>'
+      + (floaterOpts ? `<optgroup label="On backup now">${floaterOpts}</optgroup>` : '')
+      + (otherOpts ? `<optgroup label="Everyone else">${otherOpts}</optgroup>` : '');
+    if (prev && [...targetSel.options].some((o) => o.value === prev)) targetSel.value = prev;
   }
 
   function populateEndOptions() {
@@ -112,7 +131,7 @@ export function initShiftChangeModal(data, event) {
   }
 
   startSel.addEventListener('change', onStartChange);
-  endSel.addEventListener('change', refreshMessage);
+  endSel.addEventListener('change', () => { populateTargetOptions(); refreshMessage(); });
   targetSel.addEventListener('change', refreshMessage);
 
   function closeModal() {
@@ -151,7 +170,8 @@ export function initShiftChangeModal(data, event) {
           statusEl.textContent = `✓ Sent to ${target} to accept. `;
           const phone = await phoneFor(target);
           if (phone) {
-            const body = `Can you cover my ${assignment.station} ${fmt12(startSel.value)}–${fmt12(endSel.value)} on ${assignment.day} at IBC? Open the staff app → My Schedule to accept.`;
+            const where = (event.branding && event.branding.shortName) || event.name || 'the event';
+            const body = `Can you cover my ${assignment.station} ${fmt12(startSel.value)}–${fmt12(endSel.value)} on ${assignment.day} at ${where}? Open the staff app → My Schedule to accept.`;
             const a = document.createElement('a');
             a.className = 'coverage-sms';
             a.href = `sms:${phone.replace(/[^\d+]/g, '')}?body=${encodeURIComponent(body)}`;
