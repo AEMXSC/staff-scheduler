@@ -71,6 +71,8 @@ async function main() {
           <ul class="name-suggestions" hidden></ul>
         </div>
         <button class="staff-alerts-btn" id="staff-alerts-btn" hidden>🔔 Enable phone alerts</button>
+        <a class="staff-cal-btn" id="staff-cal-download" hidden>📅 Add to calendar</a>
+        <a class="staff-cal-btn" id="staff-cal-subscribe" hidden>🔄 Subscribe (auto-updates)</a>
       </div>
       <div class="incoming-asks" id="incoming-asks"></div>
       <div class="my-requests" id="my-requests"></div>
@@ -181,6 +183,21 @@ async function main() {
   const clearBtn = myPanel.querySelector('.name-clear');
   const suggestionsEl = myPanel.querySelector('.name-suggestions');
   const staffAlertsBtn = myPanel.querySelector('#staff-alerts-btn');
+  const calDownloadBtn = myPanel.querySelector('#staff-cal-download');
+  const calSubscribeBtn = myPanel.querySelector('#staff-cal-subscribe');
+
+  // Point the calendar links at this person's feed (download = .ics attachment;
+  // subscribe = webcal:// so Outlook/Apple/Google auto-refresh). Hidden until a
+  // name is picked.
+  function updateCalendarLinks(name) {
+    const show = !!name;
+    calDownloadBtn.hidden = !show;
+    calSubscribeBtn.hidden = !show;
+    if (!show) return;
+    const q = `${eventId}?name=${encodeURIComponent(name)}`;
+    calDownloadBtn.href = `/api/calendar/${q}&download=1`;
+    calSubscribeBtn.href = `webcal://${window.location.host}/api/calendar/${q}`;
+  }
 
   const shiftChangeModal = initShiftChangeModal(data, event);
   const onRequestChange = (slot) => shiftChangeModal.open(slot, selectedName);
@@ -191,6 +208,7 @@ async function main() {
     try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
     clearBtn.hidden = !name;
     staffAlertsBtn.hidden = !name;
+    updateCalendarLinks(name);
     renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
     loadIncomingAsks(selectedName);
     loadMyRequests(selectedName);
@@ -323,6 +341,7 @@ async function main() {
   clearBtn.addEventListener('click', () => { nameInput.value = ''; applyName(''); nameInput.focus(); });
 
   staffAlertsBtn.hidden = !selectedName;
+  updateCalendarLinks(selectedName);
   renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
   showMode(mode);
 
