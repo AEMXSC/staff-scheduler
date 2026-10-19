@@ -13,6 +13,7 @@ import {
   getContactEmail,
 } from './db.js';
 import { sendPush } from './push.js';
+import { buildICS } from './ics.js';
 import { slackDmByEmail } from './slack.js';
 
 const EVENT_ID = 'ibc-2026';
@@ -105,6 +106,40 @@ async function handleGetSchedule(eventId, env) {
 // staff can tap to Slack/call at the booth.
 async function handleGetDirectory(eventId, env) {
   return json(await getDirectory(env, eventId));
+}
+
+// Public per-person calendar feed (.ics). Serves the "add to calendar" download
+// and the webcal subscription -- same body, `?download=1` just sets the
+// attachment header. Public, like the schedule/directory endpoints.
+async function handleCalendar(url, env) {
+  const eventId = url.pathname.split('/').pop().replace(/\.ics$/i, '');
+  const name = (url.searchParams.get('name') || '').trim();
+  if (!/^[a-z0-9-]{1,64}$/i.test(eventId)) return new Response('Bad event', { status: 400 });
+  if (!name || name.length > 100) return new Response('Bad name', { status: 400 });
+
+  let meta = { name: 'IBC 2026', timezone: 'Europe/Amsterdam' };
+  try {
+    const res = await env.ASSETS.fetch(new Request(new URL(`/events/${eventId}.json`, url)));
+    if (res.ok) meta = await res.json();
+  } catch { /* fall back to defaults */ }
+
+  const schedule = await getSchedule(env, eventId);
+  const shifts = schedule
+    .filter((r) => r.staff_name && r.staff_name.toLowerCase() === name.toLowerCase())
+    .sort((a, b) => `${a.date} ${a.start_time}`.localeCompare(`${b.date} ${b.start_time}`));
+
+  const ics = buildICS({
+    eventId, eventName: meta.name, personName: name, tz: meta.timezone || 'Europe/Amsterdam', shifts,
+  });
+  const headers = {
+    'Content-Type': 'text/calendar; charset=utf-8',
+    'Cache-Control': 'no-cache',
+  };
+  if (url.searchParams.get('download') === '1') {
+    const file = `ibc-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'schedule'}.ics`;
+    headers['Content-Disposition'] = `attachment; filename="${file}"`;
+  }
+  return new Response(ics, { headers });
 }
 
 async function handleAuth(request, env) {
@@ -560,6 +595,9 @@ export default {
     }
     if (url.pathname.startsWith('/api/directory/') && request.method === 'GET') {
       return handleGetDirectory(url.pathname.split('/').pop(), env);
+    }
+    if (url.pathname.startsWith('/api/calendar/') && request.method === 'GET') {
+      return handleCalendar(url, env);
     }
     if (url.pathname === '/api/admin/auth' && request.method === 'POST') return handleAuth(request, env);
     if (url.pathname === '/api/admin/chat' && request.method === 'POST') return handleChat(request, env);
