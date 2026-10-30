@@ -159,7 +159,7 @@ async function main() {
     const rows = directory.filter((c) => !q
       || (c.name && c.name.toLowerCase().includes(q))
       || (c.title && c.title.toLowerCase().includes(q)));
-    if (!rows.length) { contactsListEl.innerHTML = '<p class="hint">No matches.</p>'; return; }
+    if (!rows.length) { contactsListEl.innerHTML = `<p class="hint">${directory.length ? 'No matches.' : "Contacts haven't been added yet."}</p>`; return; }
     contactsListEl.innerHTML = rows.map((c) => {
       const handle = c.slack || handleFromEmail(c.email);
       const slackBtn = handle

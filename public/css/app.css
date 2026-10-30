@@ -235,7 +235,7 @@ body {
 .name-input-wrap { position: relative; }
 .name-input {
   width: 100%;
-  padding: 13px 36px 13px 14px;
+  padding: 13px 44px 13px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -247,7 +247,9 @@ body {
 .name-input:focus { outline: none; border-color: var(--accent); }
 .name-clear {
   position: absolute;
-  right: 8px;
+  right: 0;
+  width: 44px;
+  height: 44px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -324,7 +326,7 @@ body {
 /* Agenda row: fixed time column | station + area | quiet Change action. */
 .slot {
   display: grid;
-  grid-template-columns: 64px 1fr auto;
+  grid-template-columns: 64px 1fr;
   align-items: center;
   gap: 12px;
   background: var(--surface-2);
@@ -352,6 +354,8 @@ body {
 .slot-area.floater-label { color: var(--floater); font-weight: 600; }
 
 .slot-request-btn {
+  grid-column: 2;
+  justify-self: start;
   min-height: 44px;
   padding: 0 12px;
   background: transparent;
@@ -670,3 +674,6 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* No gap from these containers until they have something to show. */
+.incoming-asks:empty, .my-requests:empty { display: none; }

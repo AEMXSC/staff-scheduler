@@ -280,7 +280,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
         <button class="nav-btn" data-dir="1" aria-label="Next time slot" ${canNext ? '' : 'disabled'}>›</button>
       </div>
       <div class="whos-tools">
-        <input type="search" class="whos-search" id="whos-search" placeholder="Filter by area, station or person…" value="${escapeHtml(whosFilter)}" autocomplete="off" aria-label="Filter stations">
+        <input type="search" class="whos-search" id="whos-search" placeholder="Area or person…" value="${escapeHtml(whosFilter)}" autocomplete="off" aria-label="Filter stations">
         ${multiArea ? `<button class="areas-toggle">${allOpen ? 'Collapse all' : 'Expand all'}</button>` : ''}
       </div>
     </div>
