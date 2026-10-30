@@ -97,6 +97,9 @@ body {
   }
   .toggle sp-tab { flex: 1; justify-content: center; }
 }
+@media (max-width: 380px) {
+  .toggle sp-tab [slot="icon"] { display: none; }
+}
 
 /* ---- Name picker ---- */
 .name-picker { margin-bottom: var(--space-400); max-width: 480px; }
