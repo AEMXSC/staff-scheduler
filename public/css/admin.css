@@ -20,11 +20,12 @@
 .admin-requests-actions { display: flex; gap: var(--space-100); flex-wrap: wrap; }
 .admin-section-title { margin: 0; font-size: var(--spectrum-heading-size-xs); font-weight: var(--spectrum-bold-font-weight); }
 .admin-requests.admin-requests-flash { outline: 2px solid var(--spectrum-notice-visual-color); }
-.admin-requests-list { display: flex; flex-direction: column; gap: var(--space-200); }
+.admin-requests-list { display: flex; flex-direction: column; }
 .admin-recent-list { display: flex; flex-direction: column; }
 .admin-recent-row { font-size: var(--spectrum-font-size-100); color: var(--text-dim); padding: var(--space-100) 0; border-bottom: 1px solid var(--border); }
 .admin-recent-row:last-child { border-bottom: none; }
-.admin-request-card { background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--space-200); }
+.admin-request-card { padding: var(--space-200) 0; border-bottom: 1px solid var(--border); }
+.admin-request-card:last-child { border-bottom: none; }
 .admin-request-head { font-weight: var(--spectrum-bold-font-weight); }
 .admin-request-sub, .admin-request-msg { font-size: var(--spectrum-font-size-100); color: var(--text-dim); }
 .admin-request-note { font-size: var(--spectrum-font-size-75); color: var(--floater); }

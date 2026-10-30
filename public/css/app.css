@@ -127,12 +127,7 @@ body {
   gap: var(--space-300);
   align-items: start;
 }
-.day-card {
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-300);
-}
-.day-heading { display: flex; align-items: center; gap: var(--space-100); margin-bottom: var(--space-200); }
+.day-heading { display: flex; align-items: center; gap: var(--space-100); padding-bottom: var(--space-100); border-bottom: 1px solid var(--border); }
 .day-name { font-weight: var(--spectrum-bold-font-weight); font-size: var(--spectrum-font-size-300); }
 .day-count { color: var(--text-dim); font-size: var(--spectrum-font-size-75); }
 
@@ -148,22 +143,24 @@ body {
 
 .slot {
   display: grid;
-  grid-template-columns: 64px 1fr;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
   gap: var(--space-100) var(--space-200);
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: var(--space-200);
-  margin-bottom: var(--space-100);
+  padding: var(--space-200) 0;
+  border-bottom: 1px solid var(--border);
 }
-.slot:last-child { margin-bottom: 0; }
-.slot-active { outline: 2px solid var(--spectrum-positive-visual-color); }
+.slot:last-child { border-bottom: none; }
 .slot-when { display: flex; flex-direction: column; font-size: var(--spectrum-font-size-75); color: var(--text-dim); white-space: nowrap; }
 .slot-when span:first-child { color: var(--text); font-weight: var(--spectrum-bold-font-weight); font-size: var(--spectrum-font-size-100); }
 .slot-what { min-width: 0; }
 .slot-station { font-weight: var(--spectrum-bold-font-weight); }
 .slot-area { font-size: var(--spectrum-font-size-75); color: var(--text-dim); }
 .slot-area.floater-label { color: var(--floater); }
-.slot-request-btn { grid-column: 2; justify-self: start; }
+@media (pointer: coarse) { .slot-request-btn { min-height: 44px; } }
+@media (max-width: 380px) {
+  .slot { grid-template-columns: 64px 1fr; }
+  .slot-request-btn { grid-column: 2; justify-self: start; }
+}
 
 /* ---- On Now ---- */
 .day-picker { margin-bottom: var(--space-300); max-width: 640px; }
@@ -232,9 +229,9 @@ body {
 .coverage-sms { margin-left: var(--space-100); }
 
 /* ---- Requests shown on My Shifts ---- */
-.incoming-asks, .my-requests { display: flex; flex-direction: column; gap: var(--space-100); margin-bottom: var(--space-300); }
+.incoming-asks, .my-requests { display: flex; flex-direction: column; margin-bottom: var(--space-300); }
 .incoming-asks:empty, .my-requests:empty { display: none; }
-.myreq-card, .ask-card { background: var(--surface); border-radius: var(--radius-sm); padding: var(--space-200); }
+.myreq-card, .ask-card { padding: var(--space-200) 0; border-bottom: 1px solid var(--border); }
 .myreq-shift { font-size: var(--spectrum-font-size-100); font-weight: var(--spectrum-bold-font-weight); }
 .myreq-state { font-size: var(--spectrum-font-size-100); color: var(--text-dim); }
 .myreq-declined_by_target .myreq-state { color: var(--danger); }
