@@ -12,6 +12,7 @@ const eventId = resolveEventId();
 // Per-event so a shared origin (preview/localhost/?event= switching) doesn't
 // read back the other event's selected name.
 const LS_NAME = `staff-scheduler-name:${eventId}`;
+const LS_ALERTS = `staff-scheduler-alerts:${eventId}`; // whose name this device's alerts are under
 
 function urlB64ToUint8Array(b64) {
   const pad = '='.repeat((4 - (b64.length % 4)) % 4);
@@ -245,14 +246,31 @@ async function main() {
         body: JSON.stringify({ subscription: sub, name, ...(requestsEnabled ? {} : { eventId }) }),
       });
       try { const c = await caches.open('push-meta'); await c.put('/__push_role', new Response(requestsEnabled ? 'staff' : 'staff-updates')); } catch { /* noop */ }
+      if (resp.ok) { try { localStorage.setItem(LS_ALERTS, name); } catch { /* noop */ } }
       label.textContent = resp.ok ? 'Alerts on' : 'Try again';
       staffAlertsBtn.disabled = resp.ok;
     } catch { label.textContent = 'Try again'; staffAlertsBtn.disabled = false; }
   }
   staffAlertsBtn.addEventListener('click', enableStaffPush);
+
+  // Show "Alerts on" only if this device is still subscribed under the selected name.
+  async function syncAlertsOn() {
+    const name = selectedName;
+    let on = false;
+    try {
+      if (name && Notification.permission === 'granted' && localStorage.getItem(LS_ALERTS) === name) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        on = !!(await reg?.pushManager.getSubscription());
+      }
+    } catch { /* not supported here: leave the button offering to enable */ }
+    if (name !== selectedName) return; // the name changed while checking
+    staffAlertsBtn.querySelector('span').textContent = on ? 'Alerts on' : 'Enable phone alerts';
+    staffAlertsBtn.disabled = on;
+  }
+
   const syncAlertsBlocked = () => {
     if (selectedName && 'Notification' in window && Notification.permission === 'denied') showAlertsBlocked();
-    else alertsHint.hidden = true;
+    else { alertsHint.hidden = true; syncAlertsOn(); }
   };
   syncAlertsBlocked();
 
