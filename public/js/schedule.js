@@ -166,7 +166,7 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
           <div class="slot-station">${escapeHtml(shortStation(slot))}${isActive ? ' <span class="now-badge">NOW</span>' : ''}</div>
           ${area ? `<div class="slot-area${slot.is_floater ? ' floater-label' : ''}">${escapeHtml(area)}</div>` : ''}
         </div>
-        <button class="slot-request-btn" data-idx="${idx}" aria-label="Request change: ${escapeHtml(slot.station)}, ${day} ${fmt12(slot.start_time)}">Change</button>
+        <button class="slot-request-btn" data-idx="${idx}" aria-label="Request change: ${escapeHtml(slot.station)}, ${day} ${fmt12(slot.start_time)}">Request change</button>
       </div>`;
     }).join('');
 
