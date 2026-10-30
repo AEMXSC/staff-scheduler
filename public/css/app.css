@@ -54,7 +54,7 @@ body {
   margin-left: -50vw;
   margin-bottom: var(--space-400);
   background: var(--surface);
-  border-bottom: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent, var(--spectrum-gray-300));
 }
 .header-inner {
   max-width: var(--content-max);

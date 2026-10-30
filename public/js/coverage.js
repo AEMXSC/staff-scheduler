@@ -36,9 +36,6 @@ const OPEN_ASK = 'open-ask';
 export function initShiftChangeModal(data, event) {
   const modal = document.createElement('div');
   modal.className = 'coverage-modal';
-  modal.setAttribute('role', 'dialog');
-  modal.setAttribute('aria-modal', 'true');
-  modal.setAttribute('aria-labelledby', 'coverage-title');
   modal.hidden = true;
   modal.innerHTML = `
     <div class="coverage-backdrop"></div>
@@ -62,7 +59,7 @@ export function initShiftChangeModal(data, event) {
       </div>
       <div class="cov-field">
         <sp-field-label for="cov-msg">Message</sp-field-label>
-        <sp-textfield id="cov-msg" multiline rows="3" label="Message"></sp-textfield>
+        <sp-textfield id="cov-msg" multiline rows="2" label="Message"></sp-textfield>
       </div>
       <p class="coverage-status" id="cov-status"></p>
       <sp-button id="cov-copy" size="s" variant="secondary" treatment="outline">Copy message</sp-button>
@@ -142,8 +139,13 @@ export function initShiftChangeModal(data, event) {
   endSel.addEventListener('change', () => { populateTargetOptions(); refreshMessage(); });
   targetSel.addEventListener('change', refreshMessage);
 
+  let opener = null;
+  const pageBehind = document.getElementById('app');
+
   function closeModal() {
     modal.hidden = true;
+    pageBehind.inert = false;
+    opener?.focus();
   }
 
   modal.querySelector('#cov-cancel').addEventListener('click', closeModal);
@@ -219,17 +221,18 @@ export function initShiftChangeModal(data, event) {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modal.hidden) closeModal();
+    // With a picker open, Esc only dismisses that picker's list.
+    if (e.key === 'Escape' && !modal.hidden && !modal.querySelector('sp-picker[open]')) closeModal();
   });
 
   function open(slot, name) {
     assignment = slot;
     requesterName = name;
 
-    contextEl.innerHTML = `<div><strong>${escapeHtml(requesterName)}</strong></div>
-      <div>${escapeHtml(assignment.station)} · ${escapeHtml(assignment.day)}</div>
+    contextEl.innerHTML = `<div>${escapeHtml(assignment.station)} · ${escapeHtml(assignment.day)}</div>
       <div>${fmt12(assignment.start_time)}–${fmt12(assignment.end_time)}</div>`;
 
+    targetSel.value = OPEN_ASK; // never carry the last request's coworker into a new one
     steps = timeRangeSteps(assignment.start_time, assignment.end_time);
     startSel.innerHTML = steps.slice(0, -1).map((t) => `<sp-menu-item value="${t}">${fmt12(t)}</sp-menu-item>`).join('');
     startSel.value = assignment.start_time;
@@ -242,7 +245,9 @@ export function initShiftChangeModal(data, event) {
     statusEl.textContent = '';
     statusEl.dataset.kind = '';
 
+    opener = document.activeElement;
     modal.hidden = false;
+    pageBehind.inert = true;
     startSel.focus(); // not the message box: that would pop the phone keyboard over the form
   }
 

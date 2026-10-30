@@ -20,7 +20,6 @@ export function applyTheme(event) {
   const t = (event && event.theme) || {};
   const root = document.documentElement;
   if (t.accent) root.style.setProperty('--accent', t.accent);
-  if (t.accentInk) root.style.setProperty('--accent-ink', t.accentInk);
   if (t.floater) root.style.setProperty('--floater', t.floater);
 
   const title = (event && event.branding && event.branding.title)

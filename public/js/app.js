@@ -336,6 +336,7 @@ async function main() {
   }
 
   nameInput.addEventListener('focusin', () => {
+    clearTimeout(hideTimer);
     const q = nameInput.value.trim().toLowerCase();
     buildSuggestions(q ? names.filter((n) => n.toLowerCase().includes(q)) : names);
   });
@@ -344,11 +345,17 @@ async function main() {
     if (!q && selectedName) applyName(''); // the search field's clear button
     buildSuggestions(q ? names.filter((n) => n.toLowerCase().includes(q)) : names);
   });
-  nameInput.addEventListener('focusout', () => setTimeout(() => { suggestionsEl.hidden = true; }, 150));
-  suggestionsEl.addEventListener('mousedown', (e) => {
+  let hideTimer = null;
+  nameInput.addEventListener('focusout', (e) => {
+    if (suggestionsEl.contains(e.relatedTarget)) return;
+    hideTimer = setTimeout(() => { suggestionsEl.hidden = true; }, 150);
+  });
+  const pickSuggestion = (e) => {
     const opt = e.target.closest('.name-option');
     if (opt) { nameInput.value = opt.dataset.name; applyName(opt.dataset.name); suggestionsEl.hidden = true; autoPromptAlerts(); }
-  });
+  };
+  suggestionsEl.addEventListener('mousedown', pickSuggestion);
+  suggestionsEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') pickSuggestion(e); });
 
   staffAlertsBtn.hidden = !selectedName;
   renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);

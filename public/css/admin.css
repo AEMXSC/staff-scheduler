@@ -1,4 +1,4 @@
-#admin-app .app-header { padding: var(--space-300) var(--space-400); }
+#admin-app .app-header { padding: var(--space-300) max(var(--space-400), calc((100vw - var(--content-max)) / 2 + var(--space-400))); }
 .admin-auth, .admin-tools, .admin-requests, .admin-recent {
   background: var(--surface);
   border-radius: var(--radius-md);
