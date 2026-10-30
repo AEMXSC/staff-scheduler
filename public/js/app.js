@@ -375,6 +375,18 @@ async function main() {
       renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson, event);
     }
   }, 60_000);
+
+  // Coming back to an app left open: reload only if the schedule actually changed,
+  // and not mid-request or mid-name-search (the next return checks again).
+  const loadedSchedule = JSON.stringify(data);
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    try {
+      const latest = await fetchScheduleData(event.dataUrl);
+      const busy = document.querySelector('.coverage-modal:not([hidden])') || nameInput.matches(':focus-within');
+      if (!busy && JSON.stringify(latest) !== loadedSchedule) location.reload();
+    } catch { /* offline: keep what's on screen */ }
+  });
 }
 
 main();
