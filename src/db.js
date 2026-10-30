@@ -234,15 +234,42 @@ export async function markRequest(env, id, status, covererName) {
 // --- web push subscriptions ---
 // staff_name NULL = admin device (broadcast queue alerts); set = that person's
 // device (targeted "you were asked" alerts).
-export async function savePushSubscription(env, sub, staffName = null) {
+export async function savePushSubscription(env, sub, staffName = null, eventId = null) {
   if (!sub || !sub.endpoint) return { error: 'no endpoint' };
   const name = staffName ? `${staffName}`.trim().slice(0, 100) : null;
   await env.DB
-    .prepare(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at, staff_name) VALUES (?,?,?,?,?)
-              ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, staff_name = excluded.staff_name`)
-    .bind(sub.endpoint, sub.keys?.p256dh || null, sub.keys?.auth || null, new Date().toISOString(), name)
+    .prepare(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at, staff_name, event_id) VALUES (?,?,?,?,?,?)
+              ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, staff_name = excluded.staff_name, event_id = excluded.event_id`)
+    .bind(sub.endpoint, sub.keys?.p256dh || null, sub.keys?.auth || null, new Date().toISOString(), name, eventId)
     .run();
   return { ok: true };
+}
+
+// A person's devices signed up for schedule-change alerts at this event.
+export async function listEventStaffSubscriptions(env, eventId, name) {
+  const { results } = await env.DB
+    .prepare('SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE event_id = ? AND lower(staff_name) = lower(?)')
+    .bind(eventId, name)
+    .all();
+  return results;
+}
+
+// Who a confirmed admin change affects. Read before applying it, since a cancel
+// deletes the row that holds the name.
+export async function affectedPeople(env, pending) {
+  if (pending.type === 'add_shift') {
+    return { eventId: pending.row.event_id, names: [pending.row.staff_name] };
+  }
+  const ids = [...(pending.ids || []), ...(pending.idsA || []), ...(pending.idsB || [])];
+  if (!ids.length) return null;
+  const { results } = await env.DB
+    .prepare(`SELECT DISTINCT event_id, staff_name FROM shifts WHERE id IN (${ids.map(() => '?').join(',')})`)
+    .bind(...ids)
+    .all();
+  if (!results.length) return null;
+  const names = results.map((r) => r.staff_name);
+  if (pending.coverer) names.push(pending.coverer);
+  return { eventId: results[0].event_id, names: [...new Set(names.filter(Boolean))] };
 }
 
 // Admin devices (broadcast queue alerts).

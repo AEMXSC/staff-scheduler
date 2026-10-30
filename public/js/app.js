@@ -192,8 +192,11 @@ async function main() {
   const staffAlertsBtn = myPanel.querySelector('#staff-alerts-btn');
   const alertsHint = myPanel.querySelector('#alerts-hint');
 
-  const shiftChangeModal = initShiftChangeModal(data, event);
-  const onRequestChange = (slot) => shiftChangeModal.open(slot, selectedName);
+  // Set "shiftChangeRequests": false in an event's JSON to turn off staff change
+  // requests; alerts then announce admin changes instead. Delete it to restore.
+  const requestsEnabled = event.shiftChangeRequests !== false;
+  const shiftChangeModal = requestsEnabled ? initShiftChangeModal(data, event) : null;
+  const onRequestChange = requestsEnabled ? (slot) => shiftChangeModal.open(slot, selectedName) : null;
 
   function applyName(val) {
     const name = val.trim();
@@ -238,9 +241,10 @@ async function main() {
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(key) });
       const resp = await fetch('/api/push/subscribe/staff', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: sub, name }),
+        // eventId opts this device into admin-change alerts, whose wording needs the role below.
+        body: JSON.stringify({ subscription: sub, name, ...(requestsEnabled ? {} : { eventId }) }),
       });
-      try { const c = await caches.open('push-meta'); await c.put('/__push_role', new Response('staff')); } catch { /* noop */ }
+      try { const c = await caches.open('push-meta'); await c.put('/__push_role', new Response(requestsEnabled ? 'staff' : 'staff-updates')); } catch { /* noop */ }
       label.textContent = resp.ok ? 'Alerts on' : 'Try again';
       staffAlertsBtn.disabled = resp.ok;
     } catch { label.textContent = 'Try again'; staffAlertsBtn.disabled = false; }
@@ -276,7 +280,7 @@ async function main() {
   }
 
   async function loadIncomingAsks(name) {
-    if (!name) { incomingAsksEl.innerHTML = ''; return; }
+    if (!name || !requestsEnabled) { incomingAsksEl.innerHTML = ''; return; }
     try {
       const asks = await (await fetch(`/api/requests/for?eventId=${eventId}&name=${encodeURIComponent(name)}`)).json();
       if (!Array.isArray(asks) || !asks.length) { incomingAsksEl.innerHTML = ''; return; }
@@ -298,7 +302,7 @@ async function main() {
   // The requester's own outgoing requests + their state (so a decline/approval
   // is visible in-app even without push).
   async function loadMyRequests(name) {
-    if (!name) { myRequestsEl.innerHTML = ''; return; }
+    if (!name || !requestsEnabled) { myRequestsEl.innerHTML = ''; return; }
     try {
       const rows = await (await fetch(`/api/requests/mine?eventId=${eventId}&name=${encodeURIComponent(name)}`)).json();
       if (!Array.isArray(rows) || !rows.length) { myRequestsEl.innerHTML = ''; return; }

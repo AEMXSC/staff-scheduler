@@ -5,6 +5,7 @@
   "dataUrl": "/api/schedule/max-2026",
   "slackChannelId": "",
   "tagline": "Dream big. Create bigger.",
+  "shiftChangeRequests": false,
   "theme": { "accent": "#EB1000", "accentInk": "#ffffff", "floater": "#e58b1e" },
   "branding": { "logo": "/images/max-logo.svg", "shortName": "MAX", "title": "Adobe MAX 2026 Staff Schedule", "logoIncludesAdobe": true, "icon": "/icons/max-192.png", "manifest": "/manifest-max.webmanifest", "appTitle": "MAX Staff" },
   "stationOrder": [],

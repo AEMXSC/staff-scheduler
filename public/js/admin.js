@@ -73,6 +73,7 @@ let eventShortName = 'the event';
     const img = root.querySelector('.brand-ibc-logo');
     if (img) { img.src = logo.src; img.alt = logo.alt; }
     if (ev.branding && ev.branding.logoIncludesAdobe) root.querySelectorAll('.brand-adobe-logo, .brand-divider').forEach((n) => n.remove());
+    if (ev.shiftChangeRequests === false) root.classList.add('no-requests');
   } catch { /* keep default branding */ }
 })();
 

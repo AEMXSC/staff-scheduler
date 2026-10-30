@@ -5,6 +5,7 @@
   padding: var(--space-300);
   margin-bottom: var(--space-300);
 }
+.no-requests .admin-requests, .no-requests .admin-recent { display: none; }
 .admin-auth { max-width: 400px; }
 .admin-auth-row { display: flex; gap: var(--space-100); align-items: center; }
 .admin-auth-row sp-textfield { flex: 1; }

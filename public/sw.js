@@ -45,13 +45,14 @@ self.addEventListener('push', (e) => {
       const m = await caches.open(META_CACHE).then((c) => c.match('/__push_role'));
       if (m) role = (await m.text()) || 'admin';
     } catch { /* default admin */ }
-    const staff = role === 'staff';
-    await self.registration.showNotification(staff ? 'Shift cover request' : 'Shift schedule update', {
-      body: staff ? 'Someone asked you to cover a shift — tap to open.' : 'A shift change needs you or was just made — tap to open.',
+    const updates = role === 'staff-updates'; // events with staff requests turned off
+    const staff = role === 'staff' || updates;
+    await self.registration.showNotification(updates ? 'Your schedule changed' : staff ? 'Shift cover request' : 'Shift schedule update', {
+      body: updates ? 'An admin changed your shifts — tap to see the latest.' : staff ? 'Someone asked you to cover a shift — tap to open.' : 'A shift change needs you or was just made — tap to open.',
       icon: PUSH_ICON,
       badge: PUSH_ICON,
       tag: 'shift-request',
-      data: { url: staff ? '/' : '/admin.html' },
+      data: { url: staff ? '/' : '/admin.html', reload: updates },
     });
   })());
 });
@@ -59,8 +60,15 @@ self.addEventListener('push', (e) => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const url = (e.notification.data && e.notification.data.url) || '/';
+  const reload = e.notification.data && e.notification.data.reload;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
-    for (const c of cs) { if (c.url.includes(url) && 'focus' in c) return c.focus(); }
+    for (const c of cs) {
+      if (c.url.includes(url) && 'focus' in c) {
+        // An open app holds the schedule it loaded; reload so the change shows.
+        if (reload) return c.navigate(c.url).catch(() => c).then((w) => (w || c).focus());
+        return c.focus();
+      }
+    }
     return self.clients.openWindow(url);
   }));
 });

@@ -10,7 +10,7 @@ import {
   planCoverShift, createRequest, listPendingRequests, getRequestById, markRequest,
   listRequestsForTarget, respondToRequest, listRecentChanges, isKnownStaff, listMyRequests,
   savePushSubscription, listPushSubscriptions, listStaffSubscriptions, deletePushSubscription,
-  getContactEmail,
+  getContactEmail, listEventStaffSubscriptions, affectedPeople,
 } from './db.js';
 import { sendPush } from './push.js';
 import { slackDmByEmail } from './slack.js';
@@ -296,15 +296,18 @@ async function handleChat(request, env) {
   return json({ message: 'I could not resolve that in a few steps — try narrowing the question.' });
 }
 
-async function handleConfirm(request, env) {
+async function handleConfirm(request, env, ctx) {
   if (!(await requireAuth(request, env))) return json({ error: 'Unauthorized' }, 401);
   const { pendingAction } = await request.json();
   if (!pendingAction?.type) return json({ error: 'Missing action' }, 400);
 
+  // A failed lookup costs the alert, never the change itself.
+  const affected = await affectedPeople(env, pendingAction).catch(() => null);
   const result = await applyPending(env, pendingAction);
   if (result.drift) return json({ error: 'Those rows changed since this was proposed — re-run the request.' }, 409);
   if (result.duplicate) return json({ error: 'That shift already exists — nothing was added.' }, 409);
   if (result.error) return json({ error: 'Unknown action' }, 400);
+  if (ctx && affected) ctx.waitUntil(notifyScheduleChange(env, affected));
   return json({ message: `Applied — ${result.updates} row(s) updated.`, updates: result.updates });
 }
 
@@ -353,6 +356,10 @@ async function notifyStaff(env, name) {
   await pushAll(env, await listStaffSubscriptions(env, name));
 }
 
+async function notifyScheduleChange(env, { eventId, names }) {
+  await Promise.all(names.map(async (name) => pushAll(env, await listEventStaffSubscriptions(env, eventId, name))));
+}
+
 // Reach a person on every available channel: app push (if they enabled it) and
 // a Slack DM (if a bot token is configured and we can resolve their email).
 async function pingPerson(env, eventId, name, text) {
@@ -398,10 +405,11 @@ async function handlePushSubscribeStaff(request, env) {
   if (raw !== null && Number(raw) >= REQ_RATE_MAX) return json({ error: 'Too many requests — try again later.' }, 429);
   await env.SCHEDULE_KV.put(key, String((raw ? Number(raw) : 0) + 1), { expirationTtl: REQ_RATE_TTL });
 
-  const { subscription, name } = await request.json();
+  const { subscription, name, eventId } = await request.json();
   if (!name || !`${name}`.trim()) return json({ error: 'Pick your name first.' }, 400);
   if (!subscription || !isAllowedPushEndpoint(subscription.endpoint)) return json({ error: 'Invalid push endpoint.' }, 400);
-  const result = await savePushSubscription(env, subscription, name);
+  if (eventId !== undefined && !/^[a-z0-9-]{1,50}$/.test(eventId)) return json({ error: 'Invalid event.' }, 400);
+  const result = await savePushSubscription(env, subscription, name, eventId ?? null);
   if (result.error) return json({ error: result.error }, 400);
   return json({ ok: true });
 }
@@ -581,7 +589,7 @@ export default {
     }
     if (url.pathname === '/api/admin/auth' && request.method === 'POST') return handleAuth(request, env);
     if (url.pathname === '/api/admin/chat' && request.method === 'POST') return handleChat(request, env);
-    if (url.pathname === '/api/admin/confirm' && request.method === 'POST') return handleConfirm(request, env);
+    if (url.pathname === '/api/admin/confirm' && request.method === 'POST') return handleConfirm(request, env, ctx);
     if (url.pathname === '/api/admin/schedule-upload' && request.method === 'POST') return handleScheduleUpload(request, env);
     if (url.pathname === '/api/admin/contacts-upload' && request.method === 'POST') return handleContactsUpload(request, env);
     if (url.pathname === '/api/admin/contacts' && request.method === 'GET') return handleGetContacts(request, env);
