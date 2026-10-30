@@ -163,10 +163,10 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
       return `<div class="slot${isActive ? ' slot-active' : ''}${slot.is_floater ? ' slot-floater' : ''}">
         <div class="slot-when"><span>${fmt12(slot.start_time)}</span><span>${fmt12(slot.end_time)}</span></div>
         <div class="slot-what">
-          <div class="slot-station">${escapeHtml(shortStation(slot))}${isActive ? ' <span class="now-badge">NOW</span>' : ''}</div>
+          <div class="slot-station">${escapeHtml(shortStation(slot))}${isActive ? ' <sp-badge size="s" variant="positive">Now</sp-badge>' : ''}</div>
           ${area ? `<div class="slot-area${slot.is_floater ? ' floater-label' : ''}">${escapeHtml(area)}</div>` : ''}
         </div>
-        <button class="slot-request-btn" data-idx="${idx}" aria-label="Request change: ${escapeHtml(slot.station)}, ${day} ${fmt12(slot.start_time)}">Request change</button>
+        <sp-button class="slot-request-btn" size="s" variant="secondary" treatment="outline" data-idx="${idx}" label="Request change: ${escapeHtml(slot.station)}, ${day} ${fmt12(slot.start_time)}">Request change</sp-button>
       </div>`;
     }).join('');
 
@@ -174,7 +174,7 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
       <div class="day-heading">
         <span class="day-name">${day}</span>
         <span class="day-count">${slots.length} shift${slots.length === 1 ? '' : 's'}</span>
-        ${isToday ? '<span class="today-pill">Today</span>' : ''}
+        ${isToday ? '<sp-badge size="s" variant="neutral">Today</sp-badge>' : ''}
       </div>
       <div class="slots">${slotItems}</div>
     </div>`;
@@ -231,7 +231,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     const search = `${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
     return `<div class="station-card" data-search="${escapeHtml(search)}">
       <div class="station-name">${escapeHtml(displayStation(station))}</div>
-      <div class="station-people">${rows.map((r) => `<button class="chip chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</button>`).join('')}</div>
+      <div class="station-people">${rows.map((r) => `<sp-action-button size="s" class="chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</sp-action-button>`).join('')}</div>
     </div>`;
   };
 
@@ -250,7 +250,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     const search = `${rows[0].group || ''} ${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
     return `<li class="area-row${floater ? ' area-row-floater' : ''}" data-search="${escapeHtml(search)}">
       <span class="area-station">${escapeHtml(displayStation(shortStation(rows[0])))}</span>
-      <span class="area-people">${rows.map((r) => `<button class="chip chip-link${floater ? ' chip-floater' : ''}" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</button>`).join('')}</span>
+      <span class="area-people">${rows.map((r) => `<sp-action-button size="s" class="chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</sp-action-button>`).join('')}</span>
     </li>`;
   };
 
@@ -258,14 +258,13 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     ? areaList.map(({ area, stations }) => {
       const ordered = [...stations].sort(([, a], [, b]) => Number(a[0].is_floater) - Number(b[0].is_floater));
       const people = new Set(ordered.flatMap(([, rows]) => rows.map((r) => r.staff_name))).size;
-      return `<details class="area" data-area="${escapeHtml(area)}"${openAreas.has(area) ? ' open' : ''}>
-        <summary class="area-summary"><span class="area-name">${escapeHtml(area)}</span><span class="area-count">${people} on</span></summary>
+      return `<sp-accordion-item class="area" data-area="${escapeHtml(area)}" label="${escapeHtml(area)} · ${people} on"${openAreas.has(area) ? ' open' : ''}>
         <ul class="area-list">${ordered.map(([s, rows]) => rowFor(s, rows)).join('')}</ul>
-      </details>`;
+      </sp-accordion-item>`;
     }).join('')
     : areaList.map(({ stations }) => `<div class="stations-grid">${stations.map(([s, rows]) => cardFor(s, rows)).join('')}</div>`).join('');
 
-  const floaterChips = floaters.map((r) => `<button class="chip chip-floater chip-link" data-search="${escapeHtml(`${r.staff_name} ${r.station}`.toLowerCase())}" data-name="${escapeHtml(r.staff_name)}" title="${escapeHtml(r.station)}">${escapeHtml(r.staff_name)}</button>`).join('');
+  const floaterChips = floaters.map((r) => `<sp-action-button size="s" class="chip-link" data-search="${escapeHtml(`${r.staff_name} ${r.station}`.toLowerCase())}" data-name="${escapeHtml(r.staff_name)}" title="${escapeHtml(r.station)}">${escapeHtml(r.staff_name)}</sp-action-button>`).join('');
 
   const canPrev = effectiveIdx > 0;
   const canNext = effectiveIdx < daySlots.length - 1;
@@ -275,16 +274,17 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
   container.innerHTML = `
     <div class="whos-sticky">
       <div class="slot-nav">
-        <button class="nav-btn" data-dir="-1" aria-label="Previous time slot" ${canPrev ? '' : 'disabled'}>‹</button>
+        <sp-action-button class="nav-btn" data-dir="-1" label="Previous time slot" ${canPrev ? '' : 'disabled'}><sp-icon-chevron-left slot="icon"></sp-icon-chevron-left></sp-action-button>
         <div class="slot-label">${fmt12(slot.start)}–${fmt12(slot.end)}</div>
-        <button class="nav-btn" data-dir="1" aria-label="Next time slot" ${canNext ? '' : 'disabled'}>›</button>
+        <sp-action-button class="nav-btn" data-dir="1" label="Next time slot" ${canNext ? '' : 'disabled'}><sp-icon-chevron-right slot="icon"></sp-icon-chevron-right></sp-action-button>
       </div>
       <div class="whos-tools">
-        <input type="search" class="whos-search" id="whos-search" placeholder="Area or person…" value="${escapeHtml(whosFilter)}" autocomplete="off" aria-label="Filter stations">
-        ${multiArea ? `<button class="areas-toggle">${allOpen ? 'Collapse all' : 'Expand all'}</button>` : ''}
+        <sp-search class="whos-search" id="whos-search" placeholder="Area or person" value="${escapeHtml(whosFilter)}" label="Filter stations"></sp-search>
+        ${multiArea ? `<sp-action-button class="areas-toggle">${allOpen ? 'Collapse all' : 'Expand all'}</sp-action-button>` : ''}
       </div>
     </div>
-    <div class="whos-areas">${areaBlocks || '<p class="hint">No one staffed at this time.</p>'}</div>
+    <div class="whos-areas">${!areaBlocks ? '<p class="hint">No one staffed at this time.</p>'
+    : multiArea ? `<sp-accordion class="whos-accordion" allow-multiple>${areaBlocks}</sp-accordion>` : areaBlocks}</div>
     <p class="hint whos-noresults" hidden>No stations match that filter.</p>
     ${multiArea ? '' : `<div class="floater-panel">
       <div class="floater-panel-title">On backup (${floaters.length})</div>
@@ -298,13 +298,10 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     });
     // While filtering, open every area with a match; otherwise restore the
     // user's own open/closed choices.
-    container.querySelectorAll('details.area').forEach((d) => {
+    container.querySelectorAll('sp-accordion-item.area').forEach((d) => {
       const any = [...d.querySelectorAll('.area-row')].some((r) => !r.hidden);
       d.hidden = !!q && !any;
-      const want = q ? any : openAreas.has(d.dataset.area);
-      // Mark programmatic changes: the async `toggle` event must not record them
-      // as the user's choice.
-      if (d.open !== want) { d.dataset.prog = String(want); d.open = want; }
+      d.open = q ? any : openAreas.has(d.dataset.area);
     });
     const noResults = container.querySelector('.whos-noresults');
     if (noResults) {
@@ -313,17 +310,19 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     }
   };
   const searchEl = container.querySelector('#whos-search');
-  if (searchEl) searchEl.addEventListener('input', () => { whosFilter = searchEl.value; applyFilter(); });
+  if (searchEl) {
+    searchEl.addEventListener('input', () => { whosFilter = searchEl.value; applyFilter(); });
+    searchEl.addEventListener('submit', (e) => e.preventDefault());
+  }
   applyFilter();
 
   const areasToggle = container.querySelector('.areas-toggle');
   const allAreasOpen = () => areaList.every((a) => openAreas.has(a.area));
   const syncToggleLabel = () => { if (areasToggle) areasToggle.textContent = allAreasOpen() ? 'Collapse all' : 'Expand all'; };
 
-  container.querySelectorAll('details.area').forEach((d) => {
-    d.addEventListener('toggle', () => {
-      if (d.dataset.prog === String(d.open)) { delete d.dataset.prog; return; }
-      delete d.dataset.prog;
+  // sp-accordion-item-toggle only fires for user clicks, after `open` has flipped.
+  container.querySelectorAll('sp-accordion-item.area').forEach((d) => {
+    d.addEventListener('sp-accordion-item-toggle', () => {
       if (d.open) openAreas.add(d.dataset.area); else openAreas.delete(d.dataset.area);
       syncToggleLabel();
     });

@@ -1,3 +1,4 @@
+import '/vendor/spectrum.js';
 import {
   fetchScheduleData, getZonedNow, escapeHtml, fmt12, getEventStatus, formatDateRange,
 } from './time-utils.js';
@@ -11,15 +12,6 @@ const eventId = resolveEventId();
 // Per-event so a shared origin (preview/localhost/?event= switching) doesn't
 // read back the other event's selected name.
 const LS_NAME = `staff-scheduler-name:${eventId}`;
-
-// Inline SVG icons (Lucide-style strokes) instead of emoji, per Spectrum.
-const svg = (d) => `<svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-const ICONS = {
-  calendar: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
-  people: svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'),
-  phone: svg('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>'),
-  bell: svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'),
-};
 
 function urlB64ToUint8Array(b64) {
   const pad = '='.repeat((4 - (b64.length % 4)) % 4);
@@ -69,25 +61,23 @@ async function main() {
           <p class="app-sub">${logoHasAdobe ? 'Staff Schedule · ' : ''}${escapeHtml(event.location || '')} · ${escapeHtml(dateRange)}</p>
         </div>
         <div class="header-status">
-          <span class="status-dot status-dot--${status.kind}" aria-hidden="true"></span>
-          <span class="status-text status-text--${status.kind}">${escapeHtml(status.text)}</span>
+          <sp-status-light size="s" variant="${{ live: 'positive', upcoming: 'notice' }[status.kind] || 'neutral'}">${escapeHtml(status.text)}</sp-status-light>
         </div>
       </div>
     </header>
-    <nav class="toggle" aria-label="Schedule view">
-      <button class="toggle-btn" data-mode="my">${ICONS.calendar}<span>My Shifts</span></button>
-      <button class="toggle-btn" data-mode="now">${ICONS.people}<span>On Now</span></button>
-      <button class="toggle-btn" data-mode="contacts">${ICONS.phone}<span>Contacts</span></button>
-    </nav>
+    <sp-tabs class="toggle" selected="my" label="Schedule view">
+      <sp-tab value="my" label="My Shifts"><sp-icon-calendar slot="icon"></sp-icon-calendar></sp-tab>
+      <sp-tab value="now" label="On Now"><sp-icon-people slot="icon"></sp-icon-people></sp-tab>
+      <sp-tab value="contacts" label="Contacts"><sp-icon-device-phone slot="icon"></sp-icon-device-phone></sp-tab>
+    </sp-tabs>
     <div class="panel panel-my">
       <div class="name-picker">
-        <label class="name-label" for="name-input">Your name</label>
+        <sp-field-label for="name-input">Your name</sp-field-label>
         <div class="name-input-wrap">
-          <input type="text" class="name-input" id="name-input" placeholder="Search your name…" value="${escapeHtml(selectedName)}" autocomplete="off">
-          <button class="name-clear" aria-label="Clear name" ${selectedName ? '' : 'hidden'}>✕</button>
-          <ul class="name-suggestions" hidden></ul>
+          <sp-search class="name-input" id="name-input" label="Your name" placeholder="Search your name" value="${escapeHtml(selectedName)}"></sp-search>
+          <sp-menu class="name-suggestions" label="Staff names" hidden></sp-menu>
         </div>
-        <button class="staff-alerts-btn" id="staff-alerts-btn" hidden>${ICONS.bell}<span>Enable phone alerts</span></button>
+        <sp-button class="staff-alerts-btn" id="staff-alerts-btn" variant="secondary" treatment="outline" hidden><sp-icon-bell slot="icon"></sp-icon-bell><span>Enable phone alerts</span></sp-button>
         <p class="hint alerts-hint" id="alerts-hint" hidden></p>
       </div>
       <div class="incoming-asks" id="incoming-asks"></div>
@@ -95,12 +85,12 @@ async function main() {
       <div class="my-slots"></div>
     </div>
     <div class="panel panel-now">
-      <div class="day-picker" role="group" aria-label="Select day"></div>
+      <sp-action-group class="day-picker" justified label="Select day"></sp-action-group>
       <div class="now-content"></div>
     </div>
     <div class="panel panel-contacts">
       <div class="name-picker">
-        <input type="text" class="name-input" id="contacts-search" placeholder="Search name or role…" autocomplete="off">
+        <sp-search id="contacts-search" label="Search contacts" placeholder="Search name or role"></sp-search>
       </div>
       <div class="contacts-list" id="contacts-list"></div>
     </div>`;
@@ -120,7 +110,7 @@ async function main() {
   const zoned = getZonedNow(event.timezone);
   let displayDay = event.days.find((d) => d.date === zoned.dateStr)?.day || event.days[0].day;
 
-  dayPicker.innerHTML = event.days.map(({ day }) => `<button class="day-btn${day === displayDay ? ' day-btn-active' : ''}" data-day="${day}" aria-label="${day}">${day.slice(0, 3)}</button>`).join('');
+  dayPicker.innerHTML = event.days.map(({ day }) => `<sp-action-button class="day-btn"${day === displayDay ? ' selected' : ''} data-day="${day}" label="${day}">${day.slice(0, 3)}</sp-action-button>`).join('');
 
   function currentSlotIdx() {
     const slots = getDaySlots(data, displayDay);
@@ -130,18 +120,14 @@ async function main() {
   dayPicker.querySelectorAll('.day-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       displayDay = btn.dataset.day;
-      dayPicker.querySelectorAll('.day-btn').forEach((b) => b.classList.toggle('day-btn-active', b.dataset.day === displayDay));
+      dayPicker.querySelectorAll('.day-btn').forEach((b) => { b.selected = b.dataset.day === displayDay; });
       renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson, event);
     });
   });
 
   function showMode(m) {
     mode = m;
-    toggle.querySelectorAll('.toggle-btn').forEach((btn) => {
-      btn.classList.toggle('toggle-active', btn.dataset.mode === mode);
-      if (btn.dataset.mode === mode) btn.setAttribute('aria-current', 'page');
-      else btn.removeAttribute('aria-current');
-    });
+    toggle.selected = mode;
     myPanel.classList.toggle('panel-hidden', mode !== 'my');
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
     contactsPanel.classList.toggle('panel-hidden', mode !== 'contacts');
@@ -164,13 +150,13 @@ async function main() {
     contactsListEl.innerHTML = rows.map((c) => {
       const handle = c.slack || handleFromEmail(c.email);
       const slackBtn = handle
-        ? `<a class="contact-btn contact-slack" href="https://slack.com/app_redirect?channel=${encodeURIComponent(handle)}" target="_blank" rel="noopener">Slack</a>`
+        ? `<sp-button size="s" variant="secondary" treatment="outline" href="https://slack.com/app_redirect?channel=${encodeURIComponent(handle)}" target="_blank" rel="noopener">Slack</sp-button>`
         : '';
       const phoneBtn = c.phone
-        ? `<a class="contact-btn contact-phone" href="tel:${escapeHtml(c.phone.replace(/[^\d+]/g, ''))}">${escapeHtml(c.phone)}</a>`
+        ? `<sp-button size="s" variant="secondary" treatment="outline" href="tel:${escapeHtml(c.phone.replace(/[^\d+]/g, ''))}">${escapeHtml(c.phone)}</sp-button>`
         : '';
       const emailBtn = c.email
-        ? `<a class="contact-btn contact-email" href="mailto:${escapeHtml(c.email)}" aria-label="Email ${escapeHtml(c.name)}">Email</a>`
+        ? `<sp-button size="s" variant="secondary" treatment="outline" href="mailto:${escapeHtml(c.email)}" label="Email ${escapeHtml(c.name)}">Email</sp-button>`
         : '';
       return `<div class="contact-row">
         <div class="contact-info">
@@ -197,10 +183,11 @@ async function main() {
 
   contactsSearch.addEventListener('input', () => { if (directory) renderContacts(contactsSearch.value); });
 
-  toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.addEventListener('click', () => showMode(btn.dataset.mode)));
+  toggle.addEventListener('change', () => showMode(toggle.selected));
+  // sp-search would otherwise submit its internal form and reload the page.
+  root.querySelectorAll('sp-search').forEach((s) => s.addEventListener('submit', (e) => e.preventDefault()));
 
   const nameInput = myPanel.querySelector('.name-input');
-  const clearBtn = myPanel.querySelector('.name-clear');
   const suggestionsEl = myPanel.querySelector('.name-suggestions');
   const staffAlertsBtn = myPanel.querySelector('#staff-alerts-btn');
   const alertsHint = myPanel.querySelector('#alerts-hint');
@@ -212,7 +199,6 @@ async function main() {
     const name = val.trim();
     selectedName = name;
     try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
-    clearBtn.hidden = !name;
     staffAlertsBtn.hidden = !name;
     syncAlertsBlocked();
     renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
@@ -298,8 +284,8 @@ async function main() {
         <div class="ask-title">${escapeHtml(a.requester_name)} asked you to cover</div>
         <div class="ask-sub">${escapeHtml(a.station)} · ${escapeHtml(a.day)} ${fmt12(a.requested_start || a.start_time)}–${fmt12(a.requested_end || a.end_time)}</div>
         <div class="ask-actions">
-          <button class="ask-accept" data-id="${a.id}">Accept</button>
-          <button class="ask-decline" data-id="${a.id}">Decline</button>
+          <sp-button class="ask-accept" variant="primary" data-id="${a.id}">Accept</sp-button>
+          <sp-button class="ask-decline" variant="secondary" treatment="outline" data-id="${a.id}">Decline</sp-button>
         </div>
         <p class="ask-result" data-res="${a.id}"></p>
       </div>`).join('');
@@ -345,25 +331,24 @@ async function main() {
 
   function buildSuggestions(filtered) {
     if (!filtered.length) { suggestionsEl.hidden = true; return; }
-    suggestionsEl.innerHTML = filtered.map((n) => `<li class="name-option" data-name="${escapeHtml(n)}">${escapeHtml(n)}</li>`).join('');
+    suggestionsEl.innerHTML = filtered.map((n) => `<sp-menu-item class="name-option" data-name="${escapeHtml(n)}">${escapeHtml(n)}</sp-menu-item>`).join('');
     suggestionsEl.hidden = false;
   }
 
-  nameInput.addEventListener('focus', () => {
+  nameInput.addEventListener('focusin', () => {
     const q = nameInput.value.trim().toLowerCase();
     buildSuggestions(q ? names.filter((n) => n.toLowerCase().includes(q)) : names);
   });
   nameInput.addEventListener('input', () => {
-    clearBtn.hidden = !nameInput.value.trim();
     const q = nameInput.value.trim().toLowerCase();
+    if (!q && selectedName) applyName(''); // the search field's clear button
     buildSuggestions(q ? names.filter((n) => n.toLowerCase().includes(q)) : names);
   });
-  nameInput.addEventListener('blur', () => setTimeout(() => { suggestionsEl.hidden = true; }, 150));
+  nameInput.addEventListener('focusout', () => setTimeout(() => { suggestionsEl.hidden = true; }, 150));
   suggestionsEl.addEventListener('mousedown', (e) => {
     const opt = e.target.closest('.name-option');
     if (opt) { nameInput.value = opt.dataset.name; applyName(opt.dataset.name); suggestionsEl.hidden = true; autoPromptAlerts(); }
   });
-  clearBtn.addEventListener('click', () => { nameInput.value = ''; applyName(''); nameInput.focus(); });
 
   staffAlertsBtn.hidden = !selectedName;
   renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);

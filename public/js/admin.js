@@ -1,7 +1,8 @@
+import '/vendor/spectrum.js';
 import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
 import { convertGrid } from './grid-convert.js';
 import { getFreeFloaters, overlappingShifts } from './schedule.js';
-import { toMins } from './time-utils.js';
+import { toMins, escapeHtml } from './time-utils.js';
 import { resolveEventId, applyTheme, eventLogo } from './event-config.js';
 
 const eventId = resolveEventId();
@@ -19,30 +20,32 @@ root.innerHTML = `
     <p class="app-sub">Ask questions or request changes — nothing is applied until you confirm it.</p>
   </header>
   <div class="admin-auth" id="admin-auth">
-    <label class="name-label" for="admin-pass">Passphrase</label>
+    <sp-field-label for="admin-pass">Passphrase</sp-field-label>
     <div class="admin-auth-row">
-      <input type="password" id="admin-pass" class="name-input" autocomplete="off">
-      <button class="admin-unlock-btn" id="admin-unlock">Unlock</button>
+      <sp-textfield type="password" id="admin-pass" label="Passphrase" autocomplete="off"></sp-textfield>
+      <sp-button id="admin-unlock" variant="primary">Unlock</sp-button>
     </div>
     <p class="hint" id="admin-auth-hint"></p>
   </div>
   <div class="admin-tools" id="admin-tools" hidden>
     <div class="admin-tool">
-      <label class="admin-tool-label" for="upload-schedule">Master schedule (.xlsx) — rebuilds the schedule</label>
-      <input type="file" id="upload-schedule" class="admin-file" accept=".xlsx,.xls">
+      <span class="admin-tool-label">Master schedule (.xlsx) — rebuilds the schedule</span>
+      <sp-button class="admin-file-btn" data-for="upload-schedule" size="s" variant="secondary" treatment="outline">Choose file</sp-button>
+      <input type="file" id="upload-schedule" accept=".xlsx,.xls" hidden>
     </div>
     <div class="admin-tool">
-      <label class="admin-tool-label" for="upload-contacts">Contacts (.xlsx) — rebuilds the directory</label>
-      <input type="file" id="upload-contacts" class="admin-file" accept=".xlsx,.xls">
+      <span class="admin-tool-label">Contacts (.xlsx) — rebuilds the directory</span>
+      <sp-button class="admin-file-btn" data-for="upload-contacts" size="s" variant="secondary" treatment="outline">Choose file</sp-button>
+      <input type="file" id="upload-contacts" accept=".xlsx,.xls" hidden>
     </div>
     <p class="admin-tool-status" id="admin-tool-status"></p>
   </div>
   <div class="admin-requests" id="admin-requests" hidden>
     <div class="admin-requests-head">
-      <h2 class="admin-section-title">Shift change requests <span class="admin-badge" id="admin-requests-badge" hidden>0</span></h2>
+      <h2 class="admin-section-title">Shift change requests <sp-badge size="s" variant="negative" id="admin-requests-badge" hidden>0</sp-badge></h2>
       <div class="admin-requests-actions">
-        <button class="admin-refresh-btn" id="admin-push-btn">Enable phone alerts</button>
-        <button class="admin-refresh-btn" id="admin-requests-refresh">Refresh</button>
+        <sp-button id="admin-push-btn" size="s" variant="secondary" treatment="outline">Enable phone alerts</sp-button>
+        <sp-button id="admin-requests-refresh" size="s" variant="secondary" treatment="outline">Refresh</sp-button>
       </div>
     </div>
     <div class="admin-requests-list" id="admin-requests-list"></div>
@@ -54,8 +57,8 @@ root.innerHTML = `
   <div class="admin-chat" id="admin-chat" hidden>
     <div class="admin-messages" id="admin-messages"></div>
     <div class="admin-input-bar">
-      <textarea id="admin-textarea" class="admin-textarea" rows="1" placeholder="Ask about or change the schedule…"></textarea>
-      <button id="admin-send" class="admin-send-btn" disabled>Send</button>
+      <sp-textfield id="admin-textarea" class="admin-textarea" multiline grows label="Message" placeholder="Ask about or change the schedule"></sp-textfield>
+      <sp-button id="admin-send" variant="primary" disabled>Send</sp-button>
     </div>
   </div>`;
 
@@ -69,6 +72,7 @@ let eventShortName = 'the event';
     const logo = eventLogo(ev);
     const img = root.querySelector('.brand-ibc-logo');
     if (img) { img.src = logo.src; img.alt = logo.alt; }
+    if (ev.branding && ev.branding.logoIncludesAdobe) root.querySelectorAll('.brand-adobe-logo, .brand-divider').forEach((n) => n.remove());
   } catch { /* keep default branding */ }
 })();
 
@@ -156,6 +160,15 @@ async function unlock() {
 unlockBtn.addEventListener('click', unlock);
 passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
 
+function spButton(text, variant) {
+  const b = document.createElement('sp-button');
+  b.setAttribute('size', 's');
+  b.setAttribute('variant', variant);
+  if (variant === 'secondary') b.setAttribute('treatment', 'outline');
+  b.textContent = text;
+  return b;
+}
+
 function addMessage(role, text) {
   const row = document.createElement('div');
   row.className = `admin-msg admin-msg-${role}`;
@@ -199,12 +212,8 @@ function renderTable(table) {
 function renderPendingAction(bubble, pendingAction) {
   const actions = document.createElement('div');
   actions.className = 'admin-pending-actions';
-  const confirmBtn = document.createElement('button');
-  confirmBtn.className = 'admin-confirm-btn';
-  confirmBtn.textContent = 'Confirm';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'admin-cancel-btn';
-  cancelBtn.textContent = 'Cancel';
+  const confirmBtn = spButton('Confirm', 'primary');
+  const cancelBtn = spButton('Cancel', 'secondary');
 
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
@@ -243,7 +252,6 @@ async function send() {
   if (!message) return;
   addMessage('user', message);
   textarea.value = '';
-  textarea.style.height = 'auto';
   sendBtn.disabled = true;
 
   history.push({ role: 'user', content: message });
@@ -285,8 +293,6 @@ async function send() {
 
 textarea.addEventListener('input', () => {
   sendBtn.disabled = !textarea.value.trim();
-  textarea.style.height = 'auto';
-  textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
 });
 textarea.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -384,6 +390,9 @@ async function uploadContacts(file) {
   }
 }
 
+root.querySelectorAll('.admin-file-btn').forEach((b) => {
+  b.addEventListener('click', () => document.getElementById(b.dataset.for).click());
+});
 scheduleInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) uploadSchedule(file);
@@ -443,17 +452,15 @@ async function resolveRequest(req, action, coverer, resultEl) {
       links.forEach(([person, body]) => {
         const href = smsLink(person, body);
         if (!href) return;
-        const a = document.createElement('a');
-        a.className = 'admin-sms-link';
+        const a = spButton(`Text ${person}`, 'secondary');
+        a.classList.add('admin-sms-link');
         a.href = href;
-        a.textContent = `Text ${person}`;
         resultEl.append(document.createTextNode(' '), a);
       });
       if (slackChannelId) {
-        const a = document.createElement('a');
-        a.className = 'admin-sms-link';
+        const a = spButton('Open Slack', 'secondary');
+        a.classList.add('admin-sms-link');
         a.href = `slack://app_redirect?channel=${encodeURIComponent(slackChannelId)}`;
-        a.textContent = 'Open Slack';
         resultEl.append(document.createTextNode(' '), a);
       }
     }
@@ -520,9 +527,9 @@ function renderRequest(req) {
   // Open ask needs a coverer pick; directed uses the named target.
   let covererSelect = null;
   if (!req.target_name) {
-    covererSelect = document.createElement('select');
-    covererSelect.className = 'admin-coverer-select';
-    covererSelect.append(new Option('Choose coverer…', ''));
+    covererSelect = document.createElement('sp-picker');
+    covererSelect.setAttribute('label', 'Choose coverer');
+    covererSelect.setAttribute('size', 's');
     // Any staff member can cover, not just floaters (field feedback). Floaters on
     // backup this slot are grouped first; the double-booking warning below flags
     // a pick who already has an overlapping shift.
@@ -531,16 +538,10 @@ function renderRequest(req) {
     const floaterSet = new Set(floaterNames);
     const others = [...new Set(scheduleData.map((r) => r.staff_name).filter(Boolean))].sort()
       .filter((n) => !floaterSet.has(n) && n !== req.requester_name);
-    if (floaterNames.length) {
-      const g = document.createElement('optgroup'); g.label = 'On backup now';
-      floaterNames.forEach((n) => g.append(new Option(n, n)));
-      covererSelect.append(g);
-    }
-    if (others.length) {
-      const g = document.createElement('optgroup'); g.label = 'Everyone else';
-      others.forEach((n) => g.append(new Option(n, n)));
-      covererSelect.append(g);
-    }
+    const group = (title, names) => (names.length
+      ? `<sp-menu-group><span slot="header">${title}</span>${names.map((n) => `<sp-menu-item value="${escapeHtml(n)}">${escapeHtml(n)}</sp-menu-item>`).join('')}</sp-menu-group>`
+      : '');
+    covererSelect.innerHTML = group('On backup now', floaterNames) + group('Everyone else', others);
     covererSelect.addEventListener('change', () => renderWarn(covererSelect.value));
     controls.append(covererSelect);
   } else {
@@ -548,12 +549,8 @@ function renderRequest(req) {
   }
   card.append(warn);
 
-  const approve = document.createElement('button');
-  approve.className = 'admin-confirm-btn';
-  approve.textContent = 'Approve';
-  const decline = document.createElement('button');
-  decline.className = 'admin-cancel-btn';
-  decline.textContent = 'Decline';
+  const approve = spButton('Approve', 'primary');
+  const decline = spButton('Decline', 'secondary');
   controls.append(approve, decline);
   card.append(controls);
 

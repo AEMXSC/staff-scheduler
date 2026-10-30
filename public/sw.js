@@ -3,7 +3,7 @@
 // the last-seen version. Event-agnostic — per-event JSON/logos are cached at
 // runtime on first fetch, not precached, so one SW serves every event (IBC, MAX).
 // Bump CACHE on any shell change to evict old assets.
-const CACHE = 'scheduler-v12';
+const CACHE = 'scheduler-v13';
 // Small cache holding this device's push role ('staff' | 'admin'), written by
 // the page on subscribe and read by the push handler. Kept across activations.
 const META_CACHE = 'push-meta';
@@ -17,6 +17,7 @@ const SHELL = [
   '/js/time-utils.js',
   '/js/coverage.js',
   '/js/event-config.js',
+  '/vendor/spectrum.js',
   '/images/adobe-logo.svg',
   '/manifest.webmanifest',
   '/icons/icon-192.png',

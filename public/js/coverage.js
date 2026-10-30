@@ -22,10 +22,12 @@ async function phoneFor(name) {
 function buildShiftChangeMessage(name, assignment, windowStart, windowEnd, target) {
   const time = `${fmt12(windowStart)}–${fmt12(windowEnd)}`;
   if (target) {
-    return `🔄 SHIFT CHANGE: ${name} needs ${assignment.station} covered ${time} — asking ${target}.`;
+    return `SHIFT CHANGE: ${name} needs ${assignment.station} covered ${time} — asking ${target}.`;
   }
-  return `🔴 COVERAGE NEEDED: ${name} at ${assignment.station} — ${time}. Can anyone cover?`;
+  return `COVERAGE NEEDED: ${name} at ${assignment.station} — ${time}. Can anyone cover?`;
 }
+
+const OPEN_ASK = 'open-ask';
 
 // Builds the (initially hidden) Shift Change Request modal and returns
 // { open(slot, requesterName) } -- called by whoever's showing the specific
@@ -41,30 +43,34 @@ export function initShiftChangeModal(data, event) {
   modal.innerHTML = `
     <div class="coverage-backdrop"></div>
     <div class="coverage-sheet">
-      <h2 class="coverage-title" id="coverage-title">Request Shift Change</h2>
+      <sp-dialog size="m" no-divider>
+      <h2 slot="heading" id="coverage-title">Request shift change</h2>
       <div class="coverage-context" id="cov-context"></div>
       <div class="cov-window-row" id="cov-window-row">
         <div class="cov-field">
-          <label for="cov-start">From</label>
-          <select id="cov-start"></select>
+          <sp-field-label for="cov-start">From</sp-field-label>
+          <sp-picker id="cov-start" label="From"></sp-picker>
         </div>
         <div class="cov-field">
-          <label for="cov-end">To</label>
-          <select id="cov-end"></select>
+          <sp-field-label for="cov-end">To</sp-field-label>
+          <sp-picker id="cov-end" label="To"></sp-picker>
         </div>
       </div>
       <div class="cov-field" id="cov-target-row">
-        <label for="cov-target">Ask</label>
-        <select id="cov-target"></select>
+        <sp-field-label for="cov-target">Ask</sp-field-label>
+        <sp-picker id="cov-target" label="Ask"></sp-picker>
       </div>
-      <label class="coverage-msg-label" for="cov-msg">Message</label>
-      <textarea class="coverage-msg" id="cov-msg" rows="3"></textarea>
-      <button class="coverage-send" id="cov-send">Submit request</button>
-      <button class="coverage-copy" id="cov-copy">Copy message instead</button>
+      <div class="cov-field">
+        <sp-field-label for="cov-msg">Message</sp-field-label>
+        <sp-textfield id="cov-msg" multiline rows="3" label="Message"></sp-textfield>
+      </div>
       <p class="coverage-status" id="cov-status"></p>
-      <button class="coverage-close" aria-label="Close">✕</button>
+      <sp-button id="cov-copy" size="s" variant="secondary" treatment="outline">Copy message</sp-button>
+      <sp-button slot="button" id="cov-cancel" variant="secondary" treatment="outline">Cancel</sp-button>
+      <sp-button slot="button" id="cov-send" variant="primary">Submit request</sp-button>
+      </sp-dialog>
     </div>`;
-  document.body.append(modal);
+  document.querySelector('sp-theme').append(modal);
 
   const contextEl = modal.querySelector('#cov-context');
   const startSel = modal.querySelector('#cov-start');
@@ -74,12 +80,14 @@ export function initShiftChangeModal(data, event) {
   const sendBtn = modal.querySelector('#cov-send');
   const copyBtn = modal.querySelector('#cov-copy');
   const statusEl = modal.querySelector('#cov-status');
-  const closeBtn = modal.querySelector('.coverage-close');
   const backdrop = modal.querySelector('.coverage-backdrop');
 
   let requesterName = '';
   let assignment = null;
   let steps = [];
+
+  // sp-menu-item treats an empty value as its text, so open asks use a sentinel.
+  const targetName = () => (targetSel.value === OPEN_ASK ? '' : targetSel.value);
 
   function refreshMessage() {
     msgEl.value = buildShiftChangeMessage(
@@ -87,14 +95,14 @@ export function initShiftChangeModal(data, event) {
       assignment,
       startSel.value,
       endSel.value,
-      targetSel.value,
+      targetName(),
     );
   }
 
   // Candidates are ALL staff, not just floaters (per field feedback — people
   // on-site for meetings can cover too). Floaters on backup this slot are grouped
   // first; everyone else follows, flagged if they already have an overlapping
-  // shift. A native select stays mobile-friendly and searchable at MAX scale.
+  // shift.
   function populateTargetOptions() {
     const prev = targetSel.value; // keep the chosen coverer across repopulate
     const start = startSel.value;
@@ -105,22 +113,22 @@ export function initShiftChangeModal(data, event) {
     );
     const allNames = [...new Set(data.map((r) => r.staff_name).filter(Boolean))].sort();
     const others = allNames.filter((n) => !floaterNames.has(n) && n !== requesterName);
-    const opt = (n, booked) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}${booked ? ' — already booked' : ''}</option>`;
+    const opt = (n, booked) => `<sp-menu-item value="${escapeHtml(n)}">${escapeHtml(n)}${booked ? ' — already booked' : ''}</sp-menu-item>`;
 
     const floaterOpts = [...floaterNames].sort().map((n) => opt(n, false)).join('');
     const otherOpts = others
       .map((n) => opt(n, overlappingShifts(data, n, assignment.day, start, end).length > 0))
       .join('');
 
-    targetSel.innerHTML = '<option value="">Anyone / open ask</option>'
-      + (floaterOpts ? `<optgroup label="On backup now">${floaterOpts}</optgroup>` : '')
-      + (otherOpts ? `<optgroup label="Everyone else">${otherOpts}</optgroup>` : '');
-    if (prev && [...targetSel.options].some((o) => o.value === prev)) targetSel.value = prev;
+    targetSel.innerHTML = `<sp-menu-item value="${OPEN_ASK}">Anyone / open ask</sp-menu-item>`
+      + (floaterOpts ? `<sp-menu-group><span slot="header">On backup now</span>${floaterOpts}</sp-menu-group>` : '')
+      + (otherOpts ? `<sp-menu-group><span slot="header">Everyone else</span>${otherOpts}</sp-menu-group>` : '');
+    targetSel.value = prev && [...targetSel.querySelectorAll('sp-menu-item')].some((o) => o.value === prev) ? prev : OPEN_ASK;
   }
 
   function populateEndOptions() {
     const options = steps.filter((t) => toMins(t) > toMins(startSel.value));
-    endSel.innerHTML = options.map((t) => `<option value="${t}">${fmt12(t)}</option>`).join('');
+    endSel.innerHTML = options.map((t) => `<sp-menu-item value="${t}">${fmt12(t)}</sp-menu-item>`).join('');
     endSel.value = assignment.end_time;
   }
 
@@ -138,7 +146,7 @@ export function initShiftChangeModal(data, event) {
     modal.hidden = true;
   }
 
-  closeBtn.addEventListener('click', closeModal);
+  modal.querySelector('#cov-cancel').addEventListener('click', closeModal);
   backdrop.addEventListener('click', closeModal);
 
   async function submitRequest() {
@@ -153,7 +161,7 @@ export function initShiftChangeModal(data, event) {
           eventId,
           requesterName,
           shiftId: assignment.id,
-          targetName: targetSel.value || null,
+          targetName: targetName() || null,
           message: msgEl.value,
           requestedStart: startSel.value,
           requestedEnd: endSel.value,
@@ -162,7 +170,7 @@ export function initShiftChangeModal(data, event) {
       const data = await resp.json();
       if (resp.ok) {
         statusEl.dataset.kind = 'ok';
-        const target = targetSel.value;
+        const target = targetName();
         sendBtn.textContent = 'Submitted';
         if (target) {
           // Directed ask: it waits for that person to accept. Offer a one-tap
@@ -172,8 +180,10 @@ export function initShiftChangeModal(data, event) {
           if (phone) {
             const where = (event.branding && event.branding.shortName) || event.name || 'the event';
             const body = `Can you cover my ${assignment.station} ${fmt12(startSel.value)}–${fmt12(endSel.value)} on ${assignment.day} at ${where}? Open the staff app → My Schedule to accept.`;
-            const a = document.createElement('a');
+            const a = document.createElement('sp-button');
             a.className = 'coverage-sms';
+            a.setAttribute('size', 's');
+            a.setAttribute('variant', 'secondary');
             a.href = `sms:${phone.replace(/[^\d+]/g, '')}?body=${encodeURIComponent(body)}`;
             a.textContent = `Text ${target}`;
             statusEl.append(a);
@@ -202,9 +212,9 @@ export function initShiftChangeModal(data, event) {
     try {
       await navigator.clipboard.writeText(msgEl.value);
       copyBtn.textContent = 'Copied!';
-      setTimeout(() => { copyBtn.textContent = 'Copy message instead'; }, 2000);
+      setTimeout(() => { copyBtn.textContent = 'Copy message'; }, 2000);
     } catch {
-      msgEl.select();
+      msgEl.focusElement?.select();
     }
   });
 
@@ -221,7 +231,7 @@ export function initShiftChangeModal(data, event) {
       <div>${fmt12(assignment.start_time)}–${fmt12(assignment.end_time)}</div>`;
 
     steps = timeRangeSteps(assignment.start_time, assignment.end_time);
-    startSel.innerHTML = steps.slice(0, -1).map((t) => `<option value="${t}">${fmt12(t)}</option>`).join('');
+    startSel.innerHTML = steps.slice(0, -1).map((t) => `<sp-menu-item value="${t}">${fmt12(t)}</sp-menu-item>`).join('');
     startSel.value = assignment.start_time;
     populateEndOptions();
     populateTargetOptions();
@@ -233,7 +243,7 @@ export function initShiftChangeModal(data, event) {
     statusEl.dataset.kind = '';
 
     modal.hidden = false;
-    msgEl.focus();
+    startSel.focus(); // not the message box: that would pop the phone keyboard over the form
   }
 
   return { open };
