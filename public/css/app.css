@@ -428,6 +428,7 @@ body {
   font-size: 16px; /* >=16px so iOS doesn't zoom on focus */
 }
 .whos-search::placeholder { color: var(--text-dim); }
+.whos-search:focus { outline: none; border-color: var(--accent); }
 .area-heading {
   margin: 4px 0 12px;
   font-size: 13px;

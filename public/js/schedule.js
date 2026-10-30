@@ -247,7 +247,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     const floater = rows[0].is_floater;
     const search = `${rows[0].group || ''} ${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
     return `<li class="area-row${floater ? ' area-row-floater' : ''}" data-search="${escapeHtml(search)}">
-      <span class="area-station">${escapeHtml(shortStation(rows[0]))}</span>
+      <span class="area-station">${escapeHtml(displayStation(shortStation(rows[0])))}</span>
       <span class="area-people">${rows.map((r) => `<button class="chip chip-link${floater ? ' chip-floater' : ''}" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</button>`).join('')}</span>
     </li>`;
   };
