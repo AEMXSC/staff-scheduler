@@ -145,7 +145,7 @@ body {
   display: grid;
   grid-template-columns: 64px 1fr auto;
   align-items: center;
-  gap: var(--space-100) var(--space-200);
+  gap: var(--spectrum-spacing-75) var(--space-200);
   padding: var(--space-200) 0;
   border-bottom: 1px solid var(--border);
 }
@@ -156,17 +156,16 @@ body {
   margin-inline: calc(-1 * var(--space-100));
   padding-inline: var(--space-100);
 }
-.slot-when { display: flex; flex-direction: column; font-size: var(--spectrum-font-size-75); color: var(--text-dim); white-space: nowrap; }
+.slot-when { grid-row: 1 / span 2; display: flex; flex-direction: column; font-size: var(--spectrum-font-size-75); color: var(--text-dim); white-space: nowrap; }
 .slot-when span:first-child { color: var(--text); font-weight: var(--spectrum-bold-font-weight); font-size: var(--spectrum-font-size-100); }
-.slot-what { min-width: 0; }
-.slot-station { font-weight: var(--spectrum-bold-font-weight); }
-.slot-area { font-size: var(--spectrum-font-size-75); color: var(--text-dim); }
+/* Station gets the full width; area and button share the line below. */
+.slot-what { display: contents; }
+.slot-station { grid-column: 2 / -1; min-width: 0; font-weight: var(--spectrum-bold-font-weight); }
+.slot-area { grid-column: 2; grid-row: 2; min-width: 0; font-size: var(--spectrum-font-size-75); color: var(--text-dim); }
 .slot-area.floater-label { color: var(--floater); }
-@media (pointer: coarse) { .slot-request-btn { min-height: 44px; } }
-@media (max-width: 380px) {
-  .slot { grid-template-columns: 64px 1fr; }
-  .slot-request-btn { grid-column: 2; justify-self: start; }
-}
+.slot-request-btn { grid-column: 3; grid-row: 2; }
+/* 44px tap area without making the row 44px taller. */
+@media (pointer: coarse) { .slot-request-btn { min-height: 44px; margin-block: -8px; } }
 
 /* ---- On Now ---- */
 .day-picker { margin-bottom: var(--space-300); max-width: 640px; }

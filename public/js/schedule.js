@@ -170,7 +170,7 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
       </div>`;
     }).join('');
 
-    return `<div class="day-card${isToday ? ' day-today' : ''}">
+    return `<div>
       <div class="day-heading">
         <span class="day-name">${day}</span>
         <span class="day-count">${slots.length} shift${slots.length === 1 ? '' : 's'}</span>
