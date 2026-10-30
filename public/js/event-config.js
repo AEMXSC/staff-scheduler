@@ -32,6 +32,15 @@ export function applyTheme(event) {
     if (!meta) { meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.append(meta); }
     meta.content = t.accent;
   }
+
+  // Per-event app icon + install manifest (static HTML defaults to IBC's).
+  const b = (event && event.branding) || {};
+  const setHref = (sel, href) => { const el = document.querySelector(sel); if (el && href) el.href = href; };
+  setHref('link[rel="icon"]', b.icon);
+  setHref('link[rel="apple-touch-icon"]', b.icon);
+  setHref('link[rel="manifest"]', b.manifest);
+  const appTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if (appTitle && b.appTitle) appTitle.content = b.appTitle;
 }
 
 // The event logo + its alt text, with the IBC asset as the fallback.

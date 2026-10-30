@@ -88,6 +88,7 @@ async function main() {
           <ul class="name-suggestions" hidden></ul>
         </div>
         <button class="staff-alerts-btn" id="staff-alerts-btn" hidden>${ICONS.bell}<span>Enable phone alerts</span></button>
+        <p class="hint alerts-hint" id="alerts-hint" hidden></p>
       </div>
       <div class="incoming-asks" id="incoming-asks"></div>
       <div class="my-requests" id="my-requests"></div>
@@ -202,6 +203,7 @@ async function main() {
   const clearBtn = myPanel.querySelector('.name-clear');
   const suggestionsEl = myPanel.querySelector('.name-suggestions');
   const staffAlertsBtn = myPanel.querySelector('#staff-alerts-btn');
+  const alertsHint = myPanel.querySelector('#alerts-hint');
 
   const shiftChangeModal = initShiftChangeModal(data, event);
   const onRequestChange = (slot) => shiftChangeModal.open(slot, selectedName);
@@ -217,18 +219,31 @@ async function main() {
     loadMyRequests(selectedName);
   }
 
+  function showAlertsBlocked() {
+    staffAlertsBtn.querySelector('span').textContent = 'Alerts blocked';
+    staffAlertsBtn.disabled = false;
+    alertsHint.textContent = 'Your browser is blocking alerts for this site. Open the site settings (the icon next to the web address), set Notifications to Allow, reload, and tap this button again.';
+    alertsHint.hidden = false;
+  }
+
   // Staff opt-in to phone push, keyed to their name, so a directed ask buzzes them.
   async function enableStaffPush() {
     const name = selectedName;
     if (!name) return;
     const label = staffAlertsBtn.querySelector('span');
+    alertsHint.hidden = true;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      label.textContent = 'Alerts not supported'; staffAlertsBtn.disabled = true; return;
+      label.textContent = 'Alerts not available here';
+      alertsHint.textContent = 'On iPhone: tap Share, then Add to Home Screen, open the app from there, and tap this button again.';
+      alertsHint.hidden = false;
+      return;
     }
     staffAlertsBtn.disabled = true; label.textContent = 'Enabling…';
     try {
       const perm = await Notification.requestPermission();
-      if (perm !== 'granted') { label.textContent = 'Alerts blocked'; return; }
+      if (perm === 'denied') { showAlertsBlocked(); return; }
+      // Closing the prompt without answering isn't a refusal; let them try again.
+      if (perm !== 'granted') { label.textContent = 'Enable phone alerts'; staffAlertsBtn.disabled = false; return; }
       const reg = await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
       const { key } = await (await fetch('/api/push/vapid-public')).json();
@@ -244,6 +259,7 @@ async function main() {
     } catch { label.textContent = 'Try again'; staffAlertsBtn.disabled = false; }
   }
   staffAlertsBtn.addEventListener('click', enableStaffPush);
+  if ('Notification' in window && Notification.permission === 'denied') showAlertsBlocked();
 
   // Auto-prompt for alerts the first time someone picks their name (a real user
   // gesture), so they don't have to hunt for the button. Only when undecided.

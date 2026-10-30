@@ -60,6 +60,7 @@ body {
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip; /* .app-header's 100vw includes the desktop scrollbar width */
 }
 
 #app, #admin-app {
@@ -677,3 +678,4 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 
 /* No gap from these containers until they have something to show. */
 .incoming-asks:empty, .my-requests:empty { display: none; }
+.alerts-hint { margin: 8px 0 0; }

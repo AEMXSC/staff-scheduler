@@ -3,10 +3,11 @@
 // the last-seen version. Event-agnostic — per-event JSON/logos are cached at
 // runtime on first fetch, not precached, so one SW serves every event (IBC, MAX).
 // Bump CACHE on any shell change to evict old assets.
-const CACHE = 'scheduler-v10';
+const CACHE = 'scheduler-v11';
 // Small cache holding this device's push role ('staff' | 'admin'), written by
 // the page on subscribe and read by the push handler. Kept across activations.
 const META_CACHE = 'push-meta';
+const PUSH_ICON = self.location.hostname.startsWith('max.') ? '/icons/max-192.png' : '/icons/icon-192.png';
 const SHELL = [
   '/',
   '/index.html',
@@ -46,8 +47,8 @@ self.addEventListener('push', (e) => {
     const staff = role === 'staff';
     await self.registration.showNotification(staff ? 'Shift cover request' : 'Shift schedule update', {
       body: staff ? 'Someone asked you to cover a shift — tap to open.' : 'A shift change needs you or was just made — tap to open.',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: PUSH_ICON,
+      badge: PUSH_ICON,
       tag: 'shift-request',
       data: { url: staff ? '/' : '/admin.html' },
     });
