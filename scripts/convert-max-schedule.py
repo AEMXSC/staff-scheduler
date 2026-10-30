@@ -34,6 +34,8 @@ def load_roster(wb):
 
 
 def area_matches(roster_area, tab):
+    if not roster_area:
+        return False
     a, t = roster_area.lower(), tab.lower()
     return t in a or a.replace("adobe ", "") in t
 
@@ -73,17 +75,19 @@ class Resolver:
 
 
 def split_people(cell):
-    """'A, B' / 'A + B' -> ['A','B']; drops '- Expert' suffix and break/lunch/role notes."""
+    """'A, B' / 'A + B' / 'A & B' / 'A / B' / 'A and B' / multi-line -> ['A','B'];
+    drops '- Expert' suffix and break/lunch/role notes. Split happens before
+    norm() so newlines still separate people."""
     out, skipped = [], []
-    for part in re.split(r",| \+ ", norm(cell)):
-        p = re.sub(r"\s*-\s*Expert$", "", part.strip(), flags=re.I)
+    for part in re.split(r"[\n,/&+]| and ", str(cell)):
+        p = re.sub(r"\s*-\s*Expert$", "", norm(part), flags=re.I)
         if not p:
             continue
         if p.lower() in NOT_A_PERSON or "(" in p or ":" in p:
             skipped.append(p)
             continue
         out.append(p)
-    return out, skipped
+    return list(dict.fromkeys(out)), skipped
 
 
 def station_columns(ws):
@@ -175,10 +179,13 @@ def double_bookings(rows):
     clashes = []
     for (name, date), shifts in by_person.items():
         shifts.sort(key=lambda s: s["start_time"])
-        for a, b in zip(shifts, shifts[1:]):
-            if b["start_time"] < a["end_time"]:
-                clashes.append(f"{name} {date}: {a['station']} {a['start_time']}-{a['end_time']} "
+        latest = shifts[0]  # shift with the furthest end so far, so non-adjacent overlaps count too
+        for b in shifts[1:]:
+            if b["start_time"] < latest["end_time"]:
+                clashes.append(f"{name} {date}: {latest['station']} {latest['start_time']}-{latest['end_time']} "
                                f"overlaps {b['station']} {b['start_time']}-{b['end_time']}")
+            if b["end_time"] > latest["end_time"]:
+                latest = b
     return clashes
 
 

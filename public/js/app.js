@@ -138,7 +138,8 @@ async function main() {
     mode = m;
     toggle.querySelectorAll('.toggle-btn').forEach((btn) => {
       btn.classList.toggle('toggle-active', btn.dataset.mode === mode);
-      btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode));
+      if (btn.dataset.mode === mode) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
     });
     myPanel.classList.toggle('panel-hidden', mode !== 'my');
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
@@ -351,7 +352,9 @@ async function main() {
     if (mode === 'my') { renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange); loadIncomingAsks(selectedName); loadMyRequests(selectedName); }
     // Don't re-render Who's-On-Now while the user is typing in the filter (it
     // would rebuild the input and lose focus mid-keystroke).
-    if (mode === 'now' && document.activeElement?.id !== 'whos-search') {
+    // Also skip while anything inside the panel has focus (area toggles, chips,
+    // nav buttons) -- rebuilding the DOM would drop focus and a mid-tap press.
+    if (mode === 'now' && !nowContentEl.contains(document.activeElement)) {
       renderWhosOnNow(nowContentEl, data, displayDay, currentSlotIdx(), onSelectPerson, event);
     }
   }, 60_000);

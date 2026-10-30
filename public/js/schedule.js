@@ -211,7 +211,9 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
   const primaries = active.filter((r) => !r.is_floater);
   const floaters = getFreeFloaters(data, dayName, toMins(slot.start));
   const stationIndex = makeStationIndex(event);
-  const multiArea = new Set(active.map((r) => r.group || 'Other')).size > 1;
+  // From the whole event, not this slot, so the layout doesn't flip between slots.
+  const eventAreaCount = new Set(data.map((r) => r.group || 'Other')).size;
+  const multiArea = eventAreaCount > 1;
 
   // Group stations by booth/area (group_name). Multi-area events (MAX) keep
   // floaters inside their own area; single-area events (IBC) keep the separate
@@ -241,7 +243,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     })
     .sort((a, b) => (a.minIdx - b.minIdx) || a.area.localeCompare(b.area));
 
-  if (!openAreas) openAreas = new Set(areaList.length <= 6 ? areaList.map((a) => a.area) : []);
+  if (!openAreas) openAreas = new Set(eventAreaCount <= 6 ? data.map((r) => r.group || 'Other') : []);
 
   const rowFor = (station, rows) => {
     const floater = rows[0].is_floater;
@@ -299,7 +301,10 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     container.querySelectorAll('details.area').forEach((d) => {
       const any = [...d.querySelectorAll('.area-row')].some((r) => !r.hidden);
       d.hidden = !!q && !any;
-      d.open = q ? any : openAreas.has(d.dataset.area);
+      const want = q ? any : openAreas.has(d.dataset.area);
+      // Mark programmatic changes: the async `toggle` event must not record them
+      // as the user's choice.
+      if (d.open !== want) { d.dataset.prog = String(want); d.open = want; }
     });
     const noResults = container.querySelector('.whos-noresults');
     if (noResults) {
@@ -311,21 +316,25 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
   if (searchEl) searchEl.addEventListener('input', () => { whosFilter = searchEl.value; applyFilter(); });
   applyFilter();
 
+  const areasToggle = container.querySelector('.areas-toggle');
+  const allAreasOpen = () => areaList.every((a) => openAreas.has(a.area));
+  const syncToggleLabel = () => { if (areasToggle) areasToggle.textContent = allAreasOpen() ? 'Collapse all' : 'Expand all'; };
+
   container.querySelectorAll('details.area').forEach((d) => {
     d.addEventListener('toggle', () => {
-      if (whosFilter.trim()) return; // filter-driven open/close isn't a user choice
+      if (d.dataset.prog === String(d.open)) { delete d.dataset.prog; return; }
+      delete d.dataset.prog;
       if (d.open) openAreas.add(d.dataset.area); else openAreas.delete(d.dataset.area);
+      syncToggleLabel();
     });
   });
-  const areasToggle = container.querySelector('.areas-toggle');
   if (areasToggle) {
     areasToggle.addEventListener('click', () => {
-      const openAll = areasToggle.textContent === 'Expand all';
-      openAreas = new Set(openAll ? areaList.map((a) => a.area) : []);
+      openAreas = new Set(allAreasOpen() ? [] : areaList.map((a) => a.area));
       whosFilter = '';
       searchEl.value = '';
       applyFilter();
-      areasToggle.textContent = openAll ? 'Collapse all' : 'Expand all';
+      syncToggleLabel();
     });
   }
 

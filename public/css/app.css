@@ -208,6 +208,7 @@ body {
    Sling use) instead of a top segmented control. Active state is an accent
    bar + icon, not red label text (red on dark gray fails 4.5:1 at 12px). */
 @media (max-width: 899px) {
+  #app { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   .toggle {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
     max-width: none; margin: 0; border-radius: 0; border: none;
