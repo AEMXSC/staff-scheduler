@@ -150,6 +150,12 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .slot:last-child { border-bottom: none; }
+.slot-active {
+  outline: 2px solid var(--spectrum-positive-visual-color);
+  border-radius: var(--radius-sm);
+  margin-inline: calc(-1 * var(--space-100));
+  padding-inline: var(--space-100);
+}
 .slot-when { display: flex; flex-direction: column; font-size: var(--spectrum-font-size-75); color: var(--text-dim); white-space: nowrap; }
 .slot-when span:first-child { color: var(--text); font-weight: var(--spectrum-bold-font-weight); font-size: var(--spectrum-font-size-100); }
 .slot-what { min-width: 0; }
@@ -231,7 +237,15 @@ body {
 /* ---- Requests shown on My Shifts ---- */
 .incoming-asks, .my-requests { display: flex; flex-direction: column; margin-bottom: var(--space-300); }
 .incoming-asks:empty, .my-requests:empty { display: none; }
-.myreq-card, .ask-card { padding: var(--space-200) 0; border-bottom: 1px solid var(--border); }
+.myreq-card { padding: var(--space-200) 0; border-bottom: 1px solid var(--border); }
+/* Waiting on this person's answer, so it stands out from the rows. */
+.incoming-asks { gap: var(--space-100); }
+.ask-card {
+  background: var(--surface);
+  border: 2px solid var(--spectrum-notice-visual-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-200);
+}
 .myreq-shift { font-size: var(--spectrum-font-size-100); font-weight: var(--spectrum-bold-font-weight); }
 .myreq-state { font-size: var(--spectrum-font-size-100); color: var(--text-dim); }
 .myreq-declined_by_target .myreq-state { color: var(--danger); }
