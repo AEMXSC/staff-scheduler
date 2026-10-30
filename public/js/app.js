@@ -214,6 +214,7 @@ async function main() {
     try { if (name) localStorage.setItem(LS_NAME, name); else localStorage.removeItem(LS_NAME); } catch { /* noop */ }
     clearBtn.hidden = !name;
     staffAlertsBtn.hidden = !name;
+    syncAlertsBlocked();
     renderMySchedule(mySlotsEl, data, selectedName, event, onRequestChange);
     loadIncomingAsks(selectedName);
     loadMyRequests(selectedName);
@@ -259,7 +260,11 @@ async function main() {
     } catch { label.textContent = 'Try again'; staffAlertsBtn.disabled = false; }
   }
   staffAlertsBtn.addEventListener('click', enableStaffPush);
-  if ('Notification' in window && Notification.permission === 'denied') showAlertsBlocked();
+  const syncAlertsBlocked = () => {
+    if (selectedName && 'Notification' in window && Notification.permission === 'denied') showAlertsBlocked();
+    else alertsHint.hidden = true;
+  };
+  syncAlertsBlocked();
 
   // Auto-prompt for alerts the first time someone picks their name (a real user
   // gesture), so they don't have to hunt for the button. Only when undecided.
