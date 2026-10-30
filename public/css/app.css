@@ -149,7 +149,22 @@ body {
   background: var(--border);
   flex-shrink: 0;
 }
-.brand-ibc-logo { height: 44px; width: auto; display: block; }
+/* max-width keeps wide wordmarks (Adobe MAX) from overflowing a phone. */
+.brand-ibc-logo { height: auto; max-height: 44px; width: auto; max-width: 100%; display: block; }
+.brand-row { min-width: 0; }
+.header-brand { min-width: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+@media (max-width: 899px) {
+  .header-inner { padding: 14px 20px; }
+  .brand-row { margin-bottom: 8px; }
+  .brand-ibc-logo { max-height: 28px; }
+  .app-sub { font-size: 14px; }
+}
 
 .app-header h1 {
   margin: 0 0 2px;
@@ -182,7 +197,35 @@ body {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
+.toggle-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; font-family: inherit;
+}
 .toggle-btn.toggle-active { background: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow-1); }
+.icon { flex-shrink: 0; }
+
+/* Phones: a bottom tab bar (thumb reach; the pattern Deputy / When I Work /
+   Sling use) instead of a top segmented control. Active state is an accent
+   bar + icon, not red label text (red on dark gray fails 4.5:1 at 12px). */
+@media (max-width: 899px) {
+  .toggle {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    max-width: none; margin: 0; border-radius: 0; border: none;
+    border-top: 1px solid var(--border);
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+    background: var(--surface);
+  }
+  .toggle-btn {
+    flex-direction: column; gap: 3px; min-height: 56px; padding: 6px 4px;
+    font-size: 12px; border-radius: var(--radius-sm); position: relative;
+  }
+  .toggle-btn.toggle-active { background: transparent; color: var(--text); box-shadow: none; }
+  .toggle-btn.toggle-active .icon { color: var(--accent); }
+  .toggle-btn.toggle-active::before {
+    content: ""; position: absolute; top: -4px; left: 30%; right: 30%;
+    height: 3px; border-radius: 0 0 3px 3px; background: var(--accent);
+  }
+}
 
 .panel-hidden { display: none; }
 
@@ -257,20 +300,46 @@ body {
   border-radius: var(--radius-pill);
 }
 
+.day-count { color: var(--text-dim); font-size: 13px; }
+
+.next-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  grid-column: 1 / -1;
+}
+.next-card-now { border-color: var(--accent); }
+.next-label::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px;
+  border-radius: 50%; background: var(--accent); vertical-align: 1px;
+}
+.next-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+.next-card-now .next-label { color: var(--text); }
+.next-station { font-size: 20px; font-weight: 700; margin-top: 4px; }
+.next-meta { font-size: 14px; color: var(--text-dim); margin-top: 2px; }
+
+/* Agenda row: fixed time column | station + area | quiet Change action. */
 .slot {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 12px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 12px 14px;
+  padding: 10px 12px;
   margin-bottom: 8px;
-  box-shadow: var(--shadow-1);
 }
 .slot:last-child { margin-bottom: 0; }
 .slot-active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.slot-floater { background: var(--gray-300); }
-.slot-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.slot-floater { background: var(--gray-200); }
+.slot-when { display: flex; flex-direction: column; font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+.slot-when span:first-child { color: var(--text); font-weight: 700; font-size: 14px; }
+.slot-what { min-width: 0; }
 .slot-station { font-weight: 600; }
-.slot-time { color: var(--text-dim); font-size: 13px; }
+.slot-area { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
 .now-badge {
   background: var(--accent);
   color: var(--accent-ink);
@@ -279,16 +348,17 @@ body {
   padding: 2px 7px;
   border-radius: var(--radius-pill);
 }
-.floater-label { color: var(--floater); font-size: 12px; margin-top: 4px; font-weight: 600; }
+.slot-area.floater-label { color: var(--floater); font-weight: 600; }
 
 .slot-request-btn {
-  margin-top: 10px;
-  padding: 7px 14px;
-  background: var(--gray-200);
+  min-height: 44px;
+  padding: 0 12px;
+  background: transparent;
   border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   color: var(--text);
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -300,7 +370,9 @@ body {
 .day-picker { display: flex; gap: 8px; margin-bottom: 16px; max-width: 640px; }
 .day-btn {
   flex: 1;
+  min-height: 44px;
   padding: 10px;
+  font-family: inherit;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -317,8 +389,8 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-sm);
   font-size: 18px;
   cursor: pointer;
@@ -328,10 +400,26 @@ body {
 .slot-label { font-weight: 700; font-size: 16px; }
 
 /* Station filter + area grouping for larger events (MAX). */
+/* Slot nav + filter stay pinned while scrolling a long station list. */
+.whos-sticky {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--bg);
+  padding: 8px 0 4px;
+  margin-bottom: 8px;
+}
+.whos-sticky .slot-nav { margin-bottom: 10px; }
+.whos-tools { display: flex; gap: 8px; }
+.areas-toggle {
+  flex-shrink: 0; min-height: 44px; padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
 .whos-search {
+  flex: 1;
+  min-width: 0;
   width: 100%;
+  min-height: 44px;
   padding: 11px 14px;
-  margin-bottom: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -348,6 +436,42 @@ body {
   letter-spacing: 0.06em;
   color: var(--text-dim);
 }
+/* Multi-area (MAX): collapsible area sections, one compact row per station. */
+.area {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.area-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 52px; padding: 0 16px; cursor: pointer; list-style: none;
+  font-weight: 700; font-size: 15px;
+}
+.area-summary::-webkit-details-marker { display: none; }
+.area-summary::after {
+  content: ""; width: 8px; height: 8px; flex-shrink: 0; margin-left: 4px;
+  border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim);
+  transform: rotate(45deg) translateY(-2px); transition: transform 0.15s ease;
+}
+.area[open] > .area-summary::after { transform: rotate(-135deg) translateY(-2px); }
+.area-name { flex: 1; min-width: 0; }
+.area-count { color: var(--text-dim); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.area-list { list-style: none; margin: 0; padding: 0 16px 8px; }
+.area-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0; border-top: 1px solid var(--border);
+}
+.area-station { width: 96px; flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--text-dim); }
+.area-row-floater .area-station { color: var(--floater); }
+.area-people { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+@media (min-width: 900px) {
+  .whos-areas:has(> .area) { columns: 2; column-gap: 12px; }
+  .area { break-inside: avoid; }
+  .area-station { width: 140px; }
+}
+
 .stations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -457,6 +581,7 @@ body {
 .coverage-copy { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 .coverage-copy:hover { background: var(--gray-300); }
 .staff-alerts-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
   margin-top: 10px; padding: 8px 14px; border-radius: var(--radius-sm);
   background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
   font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
@@ -528,3 +653,18 @@ body {
   padding: 4px;
 }
 .coverage-close:hover { color: var(--text); }
+
+/* Visible keyboard focus everywhere (inputs keep their border-color focus). */
+button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Name chips are the main tap target in Who's On Now. */
+@media (pointer: coarse) {
+  .chip-link { min-height: 40px; padding: 8px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

@@ -88,6 +88,42 @@ export function overlappingShifts(data, name, day, start, end, excludeId) {
     && toMins(r.start_time) < e && s < toMins(r.end_time));
 }
 
+// Station names on big events carry their area ("Acrobat · Demo A"); inside an
+// area context the prefix is noise, so show just "Demo A".
+function shortStation(r) {
+  const prefix = r.group ? `${r.group} · ` : '';
+  return prefix && r.station.startsWith(prefix) ? r.station.slice(prefix.length) : r.station;
+}
+
+function relativeWhen(date, startMins, zoned) {
+  if (date === zoned.dateStr) {
+    const m = startMins - zoned.totalMins;
+    if (m < 60) return `in ${m} min`;
+    return `in ${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}`;
+  }
+  const days = Math.round((Date.parse(date) - Date.parse(zoned.dateStr)) / 86_400_000);
+  return days === 1 ? 'tomorrow' : `in ${days} days`;
+}
+
+// "On now" / "Next shift" hero at the top of My Schedule -- the first thing
+// staff look for on a phone. Empty once their last shift has ended.
+function nextShiftCard(mySlots, event, zoned) {
+  const dateOf = Object.fromEntries(event.days.map((d) => [d.day, d.date]));
+  const upcoming = mySlots
+    .map((r) => ({ r, date: dateOf[r.day], s: toMins(r.start_time), e: toMins(r.end_time) }))
+    .filter((x) => x.date && (x.date > zoned.dateStr || (x.date === zoned.dateStr && x.e > zoned.totalMins)))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.s - b.s);
+  if (!upcoming.length) return '';
+  const { r, date, s } = upcoming[0];
+  const isNow = date === zoned.dateStr && s <= zoned.totalMins;
+  const area = r.group && shortStation(r) !== r.station ? r.group : '';
+  return `<div class="next-card${isNow ? ' next-card-now' : ''}">
+    <div class="next-label">${isNow ? 'On now' : `Next shift · ${relativeWhen(date, s, zoned)}`}</div>
+    <div class="next-station">${escapeHtml(shortStation(r))}</div>
+    <div class="next-meta">${escapeHtml([area, `${r.day} ${fmt12(r.start_time)}–${fmt12(r.end_time)}`].filter(Boolean).join(' · '))}</div>
+  </div>`;
+}
+
 // onRequestChange(slot), if given, is called with the exact slot object
 // (not a re-derived guess) when its "Request change" button is clicked --
 // wired up by index after render, so no slot data has to round-trip through
@@ -121,28 +157,31 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
         && zoned.totalMins >= toMins(slot.start_time)
         && zoned.totalMins < toMins(slot.end_time);
       const idx = renderedSlots.push(slot) - 1;
+      const area = [slot.group && shortStation(slot) !== slot.station ? slot.group : '',
+        slot.is_floater ? 'Backup / floater' : ''].filter(Boolean).join(' · ');
 
       return `<div class="slot${isActive ? ' slot-active' : ''}${slot.is_floater ? ' slot-floater' : ''}">
-        <div class="slot-top">
-          <span class="slot-station">${escapeHtml(slot.station)}</span>
-          <span class="slot-time">${fmt12(slot.start_time)}–${fmt12(slot.end_time)}</span>
-          ${isActive ? '<span class="now-badge">NOW</span>' : ''}
+        <div class="slot-when"><span>${fmt12(slot.start_time)}</span><span>${fmt12(slot.end_time)}</span></div>
+        <div class="slot-what">
+          <div class="slot-station">${escapeHtml(shortStation(slot))}${isActive ? ' <span class="now-badge">NOW</span>' : ''}</div>
+          ${area ? `<div class="slot-area${slot.is_floater ? ' floater-label' : ''}">${escapeHtml(area)}</div>` : ''}
         </div>
-        ${slot.is_floater ? '<div class="floater-label">Backup / floater</div>' : ''}
-        <button class="slot-request-btn" data-idx="${idx}">Request change</button>
+        <button class="slot-request-btn" data-idx="${idx}" aria-label="Request change: ${escapeHtml(slot.station)}, ${day} ${fmt12(slot.start_time)}">Change</button>
       </div>`;
     }).join('');
 
     return `<div class="day-card${isToday ? ' day-today' : ''}">
       <div class="day-heading">
         <span class="day-name">${day}</span>
+        <span class="day-count">${slots.length} shift${slots.length === 1 ? '' : 's'}</span>
         ${isToday ? '<span class="today-pill">Today</span>' : ''}
       </div>
       <div class="slots">${slotItems}</div>
     </div>`;
   }).filter(Boolean).join('');
 
-  container.innerHTML = dayCards || '<p class="hint">No slots across any event day.</p>';
+  container.innerHTML = (dayCards ? nextShiftCard(mySlots, event, zoned) + dayCards : '')
+    || '<p class="hint">No slots across any event day.</p>';
 
   if (onRequestChange) {
     container.querySelectorAll('.slot-request-btn').forEach((btn) => {
@@ -153,6 +192,9 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
 
 // Persisted across slot-nav re-renders so the filter isn't lost on ‹/›.
 let whosFilter = '';
+// Areas the user has expanded; null until the first multi-area render picks a
+// default (all open for a handful of areas, all closed for MAX-sized events).
+let openAreas = null;
 
 export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerson, event) {
   const daySlots = getDaySlots(data, dayName);
@@ -169,18 +211,19 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
   const primaries = active.filter((r) => !r.is_floater);
   const floaters = getFreeFloaters(data, dayName, toMins(slot.start));
   const stationIndex = makeStationIndex(event);
+  const multiArea = new Set(active.map((r) => r.group || 'Other')).size > 1;
 
-  // Group station cards by booth/area (group_name). Area headers only show when
-  // there's more than one area, so small/ungrouped events look unchanged.
+  // Group stations by booth/area (group_name). Multi-area events (MAX) keep
+  // floaters inside their own area; single-area events (IBC) keep the separate
+  // "On backup" panel and look unchanged.
   const areas = new Map(); // area -> Map(station -> rows)
-  primaries.forEach((r) => {
+  (multiArea ? active : primaries).forEach((r) => {
     const area = r.group || 'Other';
     if (!areas.has(area)) areas.set(area, new Map());
     const byStation = areas.get(area);
     if (!byStation.has(r.station)) byStation.set(r.station, []);
     byStation.get(r.station).push(r);
   });
-  const multiArea = areas.size > 1;
 
   const cardFor = (station, rows) => {
     const search = `${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
@@ -190,59 +233,101 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     </div>`;
   };
 
-  const areaBlocks = [...areas.entries()]
+  const areaList = [...areas.entries()]
     .map(([area, byStation]) => {
       const stations = [...byStation.entries()].sort(([a], [b]) => (stationIndex(a) - stationIndex(b)) || a.localeCompare(b));
       const minIdx = Math.min(...stations.map(([s]) => stationIndex(s)));
       return { area, stations, minIdx };
     })
-    .sort((a, b) => (a.minIdx - b.minIdx) || a.area.localeCompare(b.area))
-    .map(({ area, stations }) => {
-      const cards = stations.map(([s, rows]) => cardFor(s, rows)).join('');
-      const header = multiArea ? `<h3 class="area-heading">${escapeHtml(area)}</h3>` : '';
-      return `${header}<div class="stations-grid">${cards}</div>`;
-    }).join('');
+    .sort((a, b) => (a.minIdx - b.minIdx) || a.area.localeCompare(b.area));
+
+  if (!openAreas) openAreas = new Set(areaList.length <= 6 ? areaList.map((a) => a.area) : []);
+
+  const rowFor = (station, rows) => {
+    const floater = rows[0].is_floater;
+    const search = `${rows[0].group || ''} ${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
+    return `<li class="area-row${floater ? ' area-row-floater' : ''}" data-search="${escapeHtml(search)}">
+      <span class="area-station">${escapeHtml(shortStation(rows[0]))}</span>
+      <span class="area-people">${rows.map((r) => `<button class="chip chip-link${floater ? ' chip-floater' : ''}" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</button>`).join('')}</span>
+    </li>`;
+  };
+
+  const areaBlocks = multiArea
+    ? areaList.map(({ area, stations }) => {
+      const ordered = [...stations].sort(([, a], [, b]) => Number(a[0].is_floater) - Number(b[0].is_floater));
+      const people = new Set(ordered.flatMap(([, rows]) => rows.map((r) => r.staff_name))).size;
+      return `<details class="area" data-area="${escapeHtml(area)}"${openAreas.has(area) ? ' open' : ''}>
+        <summary class="area-summary"><span class="area-name">${escapeHtml(area)}</span><span class="area-count">${people} on</span></summary>
+        <ul class="area-list">${ordered.map(([s, rows]) => rowFor(s, rows)).join('')}</ul>
+      </details>`;
+    }).join('')
+    : areaList.map(({ stations }) => `<div class="stations-grid">${stations.map(([s, rows]) => cardFor(s, rows)).join('')}</div>`).join('');
 
   const floaterChips = floaters.map((r) => `<button class="chip chip-floater chip-link" data-search="${escapeHtml(`${r.staff_name} ${r.station}`.toLowerCase())}" data-name="${escapeHtml(r.staff_name)}" title="${escapeHtml(r.station)}">${escapeHtml(r.staff_name)}</button>`).join('');
 
   const canPrev = effectiveIdx > 0;
   const canNext = effectiveIdx < daySlots.length - 1;
 
+  const allOpen = multiArea && areaList.every((a) => openAreas.has(a.area));
+
   container.innerHTML = `
-    <div class="slot-nav">
-      <button class="nav-btn" data-dir="-1" aria-label="Previous time slot" ${canPrev ? '' : 'disabled'}>‹</button>
-      <div class="slot-label">${fmt12(slot.start)}–${fmt12(slot.end)}</div>
-      <button class="nav-btn" data-dir="1" aria-label="Next time slot" ${canNext ? '' : 'disabled'}>›</button>
+    <div class="whos-sticky">
+      <div class="slot-nav">
+        <button class="nav-btn" data-dir="-1" aria-label="Previous time slot" ${canPrev ? '' : 'disabled'}>‹</button>
+        <div class="slot-label">${fmt12(slot.start)}–${fmt12(slot.end)}</div>
+        <button class="nav-btn" data-dir="1" aria-label="Next time slot" ${canNext ? '' : 'disabled'}>›</button>
+      </div>
+      <div class="whos-tools">
+        <input type="search" class="whos-search" id="whos-search" placeholder="Filter by area, station or person…" value="${escapeHtml(whosFilter)}" autocomplete="off" aria-label="Filter stations">
+        ${multiArea ? `<button class="areas-toggle">${allOpen ? 'Collapse all' : 'Expand all'}</button>` : ''}
+      </div>
     </div>
-    <input type="search" class="whos-search" id="whos-search" placeholder="Filter by station or person…" value="${escapeHtml(whosFilter)}" autocomplete="off" aria-label="Filter stations">
     <div class="whos-areas">${areaBlocks || '<p class="hint">No one staffed at this time.</p>'}</div>
     <p class="hint whos-noresults" hidden>No stations match that filter.</p>
-    <div class="floater-panel">
+    ${multiArea ? '' : `<div class="floater-panel">
       <div class="floater-panel-title">On backup (${floaters.length})</div>
       <div class="floater-chips">${floaterChips || '<span class="hint">No floaters scheduled this slot.</span>'}</div>
-    </div>`;
+    </div>`}`;
 
   const applyFilter = () => {
     const q = whosFilter.trim().toLowerCase();
     container.querySelectorAll('[data-search]').forEach((el) => {
       el.hidden = !!q && !el.dataset.search.includes(q);
     });
-    container.querySelectorAll('.area-heading').forEach((h) => {
-      const grid = h.nextElementSibling;
-      const anyVisible = grid && [...grid.querySelectorAll('.station-card')].some((c) => !c.hidden);
-      const hide = !!q && !anyVisible;
-      h.hidden = hide;
-      if (grid) grid.hidden = hide;
+    // While filtering, open every area with a match; otherwise restore the
+    // user's own open/closed choices.
+    container.querySelectorAll('details.area').forEach((d) => {
+      const any = [...d.querySelectorAll('.area-row')].some((r) => !r.hidden);
+      d.hidden = !!q && !any;
+      d.open = q ? any : openAreas.has(d.dataset.area);
     });
     const noResults = container.querySelector('.whos-noresults');
     if (noResults) {
-      const anyCard = [...container.querySelectorAll('.station-card')].some((c) => !c.hidden);
-      noResults.hidden = !(q && !anyCard);
+      const anyMatch = [...container.querySelectorAll('.station-card, .area-row')].some((c) => !c.hidden);
+      noResults.hidden = !(q && !anyMatch);
     }
   };
   const searchEl = container.querySelector('#whos-search');
   if (searchEl) searchEl.addEventListener('input', () => { whosFilter = searchEl.value; applyFilter(); });
   applyFilter();
+
+  container.querySelectorAll('details.area').forEach((d) => {
+    d.addEventListener('toggle', () => {
+      if (whosFilter.trim()) return; // filter-driven open/close isn't a user choice
+      if (d.open) openAreas.add(d.dataset.area); else openAreas.delete(d.dataset.area);
+    });
+  });
+  const areasToggle = container.querySelector('.areas-toggle');
+  if (areasToggle) {
+    areasToggle.addEventListener('click', () => {
+      const openAll = areasToggle.textContent === 'Expand all';
+      openAreas = new Set(openAll ? areaList.map((a) => a.area) : []);
+      whosFilter = '';
+      searchEl.value = '';
+      applyFilter();
+      areasToggle.textContent = openAll ? 'Collapse all' : 'Expand all';
+    });
+  }
 
   container.querySelectorAll('.nav-btn:not([disabled])').forEach((btn) => {
     btn.addEventListener('click', () => {

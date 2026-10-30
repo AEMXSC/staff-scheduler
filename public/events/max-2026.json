@@ -6,7 +6,7 @@
   "slackChannelId": "",
   "tagline": "Dream big. Create bigger.",
   "theme": { "accent": "#EB1000", "accentInk": "#ffffff", "floater": "#e58b1e" },
-  "branding": { "logo": "/images/max-logo.svg", "shortName": "MAX", "title": "Adobe MAX 2026 Staff Schedule" },
+  "branding": { "logo": "/images/max-logo.svg", "shortName": "MAX", "title": "Adobe MAX 2026 Staff Schedule", "logoIncludesAdobe": true },
   "stationOrder": [],
   "days": [
     { "day": "Tuesday", "date": "2026-11-10" },

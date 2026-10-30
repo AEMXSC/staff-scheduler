@@ -12,6 +12,15 @@ const eventId = resolveEventId();
 // read back the other event's selected name.
 const LS_NAME = `staff-scheduler-name:${eventId}`;
 
+// Inline SVG icons (Lucide-style strokes) instead of emoji, per Spectrum.
+const svg = (d) => `<svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICONS = {
+  calendar: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
+  people: svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'),
+  phone: svg('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>'),
+  bell: svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'),
+};
+
 function urlB64ToUint8Array(b64) {
   const pad = '='.repeat((4 - (b64.length % 4)) % 4);
   const base = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
@@ -34,6 +43,9 @@ async function main() {
 
   applyTheme(event);
   const logo = eventLogo(event);
+  // A full "Adobe MAX" wordmark already says Adobe + the event name, so skip the
+  // separate Adobe mark and the visible h1 rather than branding three times.
+  const logoHasAdobe = !!event.branding?.logoIncludesAdobe;
 
   const names = [...new Set(data.map((r) => r.staff_name).filter(Boolean))].sort();
   let selectedName = '';
@@ -49,12 +61,12 @@ async function main() {
       <div class="header-inner">
         <div class="header-brand">
           <div class="brand-row">
-            <img class="brand-adobe-logo" src="/images/adobe-logo.svg" alt="Adobe">
-            <span class="brand-divider" aria-hidden="true"></span>
+            ${logoHasAdobe ? '' : `<img class="brand-adobe-logo" src="/images/adobe-logo.svg" alt="Adobe">
+            <span class="brand-divider" aria-hidden="true"></span>`}
             <img class="brand-ibc-logo" src="${escapeHtml(logo.src)}" alt="${escapeHtml(logo.alt)}">
           </div>
-          <h1>${escapeHtml(event.name)}</h1>
-          <p class="app-sub">${escapeHtml(event.location || '')} · ${escapeHtml(dateRange)}</p>
+          <h1${logoHasAdobe ? ' class="sr-only"' : ''}>${escapeHtml(event.name)}</h1>
+          <p class="app-sub">${logoHasAdobe ? 'Staff Schedule · ' : ''}${escapeHtml(event.location || '')} · ${escapeHtml(dateRange)}</p>
         </div>
         <div class="header-status">
           <span class="status-dot status-dot--${status.kind}" aria-hidden="true"></span>
@@ -62,11 +74,11 @@ async function main() {
         </div>
       </div>
     </header>
-    <div class="toggle" role="group" aria-label="Schedule view">
-      <button class="toggle-btn" data-mode="my">My Schedule</button>
-      <button class="toggle-btn" data-mode="now">Who's On Now</button>
-      <button class="toggle-btn" data-mode="contacts">Contacts</button>
-    </div>
+    <nav class="toggle" aria-label="Schedule view">
+      <button class="toggle-btn" data-mode="my">${ICONS.calendar}<span>My Shifts</span></button>
+      <button class="toggle-btn" data-mode="now">${ICONS.people}<span>On Now</span></button>
+      <button class="toggle-btn" data-mode="contacts">${ICONS.phone}<span>Contacts</span></button>
+    </nav>
     <div class="panel panel-my">
       <div class="name-picker">
         <label class="name-label" for="name-input">Your name</label>
@@ -75,7 +87,7 @@ async function main() {
           <button class="name-clear" aria-label="Clear name" ${selectedName ? '' : 'hidden'}>✕</button>
           <ul class="name-suggestions" hidden></ul>
         </div>
-        <button class="staff-alerts-btn" id="staff-alerts-btn" hidden>🔔 Enable phone alerts</button>
+        <button class="staff-alerts-btn" id="staff-alerts-btn" hidden>${ICONS.bell}<span>Enable phone alerts</span></button>
       </div>
       <div class="incoming-asks" id="incoming-asks"></div>
       <div class="my-requests" id="my-requests"></div>
@@ -124,7 +136,10 @@ async function main() {
 
   function showMode(m) {
     mode = m;
-    toggle.querySelectorAll('.toggle-btn').forEach((btn) => btn.classList.toggle('toggle-active', btn.dataset.mode === mode));
+    toggle.querySelectorAll('.toggle-btn').forEach((btn) => {
+      btn.classList.toggle('toggle-active', btn.dataset.mode === mode);
+      btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode));
+    });
     myPanel.classList.toggle('panel-hidden', mode !== 'my');
     nowPanel.classList.toggle('panel-hidden', mode !== 'now');
     contactsPanel.classList.toggle('panel-hidden', mode !== 'contacts');
@@ -205,13 +220,14 @@ async function main() {
   async function enableStaffPush() {
     const name = selectedName;
     if (!name) return;
+    const label = staffAlertsBtn.querySelector('span');
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      staffAlertsBtn.textContent = 'Alerts not supported'; staffAlertsBtn.disabled = true; return;
+      label.textContent = 'Alerts not supported'; staffAlertsBtn.disabled = true; return;
     }
-    staffAlertsBtn.disabled = true; staffAlertsBtn.textContent = 'Enabling…';
+    staffAlertsBtn.disabled = true; label.textContent = 'Enabling…';
     try {
       const perm = await Notification.requestPermission();
-      if (perm !== 'granted') { staffAlertsBtn.textContent = 'Alerts blocked'; return; }
+      if (perm !== 'granted') { label.textContent = 'Alerts blocked'; return; }
       const reg = await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
       const { key } = await (await fetch('/api/push/vapid-public')).json();
@@ -222,9 +238,9 @@ async function main() {
         body: JSON.stringify({ subscription: sub, name }),
       });
       try { const c = await caches.open('push-meta'); await c.put('/__push_role', new Response('staff')); } catch { /* noop */ }
-      staffAlertsBtn.textContent = resp.ok ? '🔔 Alerts on ✓' : 'Try again';
+      label.textContent = resp.ok ? 'Alerts on' : 'Try again';
       staffAlertsBtn.disabled = resp.ok;
-    } catch { staffAlertsBtn.textContent = 'Try again'; staffAlertsBtn.disabled = false; }
+    } catch { label.textContent = 'Try again'; staffAlertsBtn.disabled = false; }
   }
   staffAlertsBtn.addEventListener('click', enableStaffPush);
 
