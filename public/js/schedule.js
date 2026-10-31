@@ -195,8 +195,6 @@ let whosFilter = '';
 // Areas the user has expanded; null until the first multi-area render picks a
 // default (all open for a handful of areas, all closed for MAX-sized events).
 let openAreas = null;
-// Set by Expand all, cleared only by Collapse all, so closing one area doesn't reflow the page.
-let areasTwoCol = false;
 
 export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerson, event) {
   const daySlots = getDaySlots(data, dayName);
@@ -287,7 +285,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
       </div>
     </div>
     <div class="whos-areas">${!areaBlocks ? '<p class="hint">No one staffed at this time.</p>'
-    : multiArea ? `<sp-accordion class="whos-accordion${areasTwoCol ? ' areas-two-col' : ''}" allow-multiple>${areaBlocks}</sp-accordion>` : areaBlocks}</div>
+    : multiArea ? `<sp-accordion class="whos-accordion" allow-multiple>${areaBlocks}</sp-accordion>` : areaBlocks}</div>
     <p class="hint whos-noresults" hidden>No stations match that filter.</p>
     ${multiArea ? '' : `<div class="floater-panel">
       <div class="floater-panel-title">On backup (${floaters.length})</div>
@@ -332,14 +330,11 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
   });
   if (areasToggle) {
     areasToggle.addEventListener('click', () => {
-      areasTwoCol = !allAreasOpen();
-      openAreas = new Set(areasTwoCol ? areaList.map((a) => a.area) : []);
+      openAreas = new Set(allAreasOpen() ? [] : areaList.map((a) => a.area));
       whosFilter = '';
       searchEl.value = '';
       applyFilter();
       syncToggleLabel();
-      container.querySelector('.whos-accordion').classList.toggle('areas-two-col', areasTwoCol);
-      if (container.getBoundingClientRect().top < 0) container.scrollIntoView(); // the areas just moved
     });
   }
 

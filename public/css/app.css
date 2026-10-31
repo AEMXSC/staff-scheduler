@@ -191,10 +191,6 @@ body {
 .area-people { display: flex; flex-wrap: wrap; gap: var(--space-100); min-width: 0; }
 .area-people sp-action-button { max-width: 100%; }
 @media (min-width: 900px) { .area-station { width: 160px; font-size: var(--spectrum-font-size-100); color: var(--text); } }
-@media (min-width: 1024px) {
-  .areas-two-col { columns: 2; column-gap: var(--space-400); }
-  .areas-two-col .area { break-inside: avoid; }
-}
 
 .stations-grid {
   display: grid;
