@@ -245,12 +245,13 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
 
   if (!openAreas) openAreas = new Set(eventAreaCount <= 6 ? data.map((r) => r.group || 'Other') : []);
 
+  const nameSize = matchMedia('(min-width: 900px)').matches ? 'm' : 's';
   const rowFor = (station, rows) => {
     const floater = rows[0].is_floater;
     const search = `${rows[0].group || ''} ${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
     return `<li class="area-row${floater ? ' area-row-floater' : ''}" data-search="${escapeHtml(search)}">
       <span class="area-station">${escapeHtml(displayStation(shortStation(rows[0])))}</span>
-      <span class="area-people">${rows.map((r) => `<sp-action-button size="s" class="chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</sp-action-button>`).join('')}</span>
+      <span class="area-people">${rows.map((r) => `<sp-action-button size="${nameSize}" class="chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</sp-action-button>`).join('')}</span>
     </li>`;
   };
 

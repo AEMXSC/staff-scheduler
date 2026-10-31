@@ -190,7 +190,7 @@ body {
 .area-row-floater .area-station { color: var(--floater); }
 .area-people { display: flex; flex-wrap: wrap; gap: var(--space-100); min-width: 0; }
 .area-people sp-action-button { max-width: 100%; }
-@media (min-width: 900px) { .area-station { width: 160px; } }
+@media (min-width: 900px) { .area-station { width: 160px; font-size: var(--spectrum-font-size-100); color: var(--text); } }
 
 .stations-grid {
   display: grid;
