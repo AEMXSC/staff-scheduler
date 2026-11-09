@@ -107,7 +107,9 @@ def station_columns(ws):
 
 def label(header):
     h = header.title() if header.isupper() or header.upper().startswith("DEMO") else header
-    return re.sub(r"\bAbi\b", "ABI", re.sub(r"\bFfcpe\b", "FFCPE", h))
+    for wrong, right in (("Abi", "ABI"), ("Ffcpe", "FFCPE"), ("Ios", "iOS")):
+        h = re.sub(rf"\b{wrong}\b", right, h)
+    return h
 
 
 def header_row(ws):
@@ -290,7 +292,7 @@ def convert(path):
                             out.append(run)
                         runs[key] = {"staff_name": person, "day": day, "date": DAY_DATES[day],
                                      "start_time": start, "end_time": add_minutes(t, SLOT_MINUTES),
-                                     "station": station, "is_floater": header.upper() == "FLOATER",
+                                     "station": station, "is_floater": header.upper().startswith("FLOATER"),
                                      "group": tab}
         out.extend(runs.values())
 
