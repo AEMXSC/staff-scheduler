@@ -95,6 +95,22 @@ function shortStation(r) {
   return prefix && r.station.startsWith(prefix) ? r.station.slice(prefix.length) : r.station;
 }
 
+// Set "demoLabelsOnlyFor": [areas] in an event's JSON to keep "Demo A"-style
+// labels only in those areas; everywhere else staff see the area and names.
+// Delete it to show every label again. Floater and named stations always show.
+const DEMO_LABEL = /^(Demo [A-Z]|Booth)$/; // Booth: tabs with no demo stations (Firefly)
+function hidesDemoLabel(r, event) {
+  const keep = event?.demoLabelsOnlyFor;
+  return Array.isArray(keep) && !keep.includes(r.group) && DEMO_LABEL.test(shortStation(r));
+}
+
+// Title and area line for a shift in My Schedule: "Demo A" / "Acrobat", or just
+// "Acrobat" when its demo label is hidden.
+function shiftTitle(r, event) {
+  if (hidesDemoLabel(r, event)) return { title: r.group, area: '' };
+  return { title: shortStation(r), area: r.group && shortStation(r) !== r.station ? r.group : '' };
+}
+
 function relativeWhen(date, startMins, zoned) {
   if (date === zoned.dateStr) {
     const m = startMins - zoned.totalMins;
@@ -116,10 +132,10 @@ function nextShiftCard(mySlots, event, zoned) {
   if (!upcoming.length) return '';
   const { r, date, s } = upcoming[0];
   const isNow = date === zoned.dateStr && s <= zoned.totalMins;
-  const area = r.group && shortStation(r) !== r.station ? r.group : '';
+  const { title, area } = shiftTitle(r, event);
   return `<div class="next-card${isNow ? ' next-card-now' : ''}">
     <div class="next-label">${isNow ? 'On now' : `Next shift · ${relativeWhen(date, s, zoned)}`}</div>
-    <div class="next-station">${escapeHtml(shortStation(r))}</div>
+    <div class="next-station">${escapeHtml(title)}</div>
     <div class="next-meta">${escapeHtml([area, `${r.day} ${fmt12(r.start_time)}–${fmt12(r.end_time)}`].filter(Boolean).join(' · '))}</div>
   </div>`;
 }
@@ -157,13 +173,13 @@ export function renderMySchedule(container, data, selectedName, event, onRequest
         && zoned.totalMins >= toMins(slot.start_time)
         && zoned.totalMins < toMins(slot.end_time);
       const idx = renderedSlots.push(slot) - 1;
-      const area = [slot.group && shortStation(slot) !== slot.station ? slot.group : '',
-        slot.is_floater ? 'Backup / floater' : ''].filter(Boolean).join(' · ');
+      const { title, area: areaName } = shiftTitle(slot, event);
+      const area = [areaName, slot.is_floater ? 'Backup / floater' : ''].filter(Boolean).join(' · ');
 
       return `<div class="slot${isActive ? ' slot-active' : ''}${slot.is_floater ? ' slot-floater' : ''}">
         <div class="slot-when"><span>${fmt12(slot.start_time)}</span><span>${fmt12(slot.end_time)}</span></div>
         <div class="slot-what">
-          <div class="slot-station">${escapeHtml(shortStation(slot))}${isActive ? ' <sp-badge size="s" variant="positive">Now</sp-badge>' : ''}</div>
+          <div class="slot-station">${escapeHtml(title)}${isActive ? ' <sp-badge size="s" variant="positive">Now</sp-badge>' : ''}</div>
           ${area ? `<div class="slot-area${slot.is_floater ? ' floater-label' : ''}">${escapeHtml(area)}</div>` : ''}
         </div>
         ${onRequestChange ? `<sp-action-button class="slot-request-btn" size="s" quiet data-idx="${idx}" label="Request change: ${escapeHtml(slot.station)}, ${day} ${fmt12(slot.start_time)}">Request change</sp-action-button>` : ''}
@@ -223,8 +239,9 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     const area = r.group || 'Other';
     if (!areas.has(area)) areas.set(area, new Map());
     const byStation = areas.get(area);
-    if (!byStation.has(r.station)) byStation.set(r.station, []);
-    byStation.get(r.station).push(r);
+    const key = hidesDemoLabel(r, event) ? '' : r.station; // unlabeled demos share one row
+    if (!byStation.has(key)) byStation.set(key, []);
+    byStation.get(key).push(r);
   });
 
   const cardFor = (station, rows) => {
@@ -248,9 +265,10 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
   const nameSize = matchMedia('(min-width: 900px)').matches ? 'm' : 's';
   const rowFor = (station, rows) => {
     const floater = rows[0].is_floater;
+    rows = [...new Map(rows.map((r) => [r.staff_name, r])).values()]; // one chip per person
     const search = `${rows[0].group || ''} ${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
     return `<li class="area-row${floater ? ' area-row-floater' : ''}" data-search="${escapeHtml(search)}">
-      <span class="area-station">${escapeHtml(displayStation(shortStation(rows[0])))}</span>
+      ${station ? `<span class="area-station">${escapeHtml(displayStation(shortStation(rows[0])))}</span>` : ''}
       <span class="area-people">${rows.map((r) => `<sp-action-button size="${nameSize}" class="chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</sp-action-button>`).join('')}</span>
     </li>`;
   };
