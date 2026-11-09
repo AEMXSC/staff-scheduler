@@ -268,7 +268,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
     rows = [...new Map(rows.map((r) => [r.staff_name, r])).values()]; // one chip per person
     const search = `${rows[0].group || ''} ${station} ${rows.map((r) => r.staff_name).join(' ')}`.toLowerCase();
     return `<li class="area-row${floater ? ' area-row-floater' : ''}" data-search="${escapeHtml(search)}">
-      ${station ? `<span class="area-station">${escapeHtml(displayStation(shortStation(rows[0])))}</span>` : ''}
+      <span class="area-station">${station ? escapeHtml(displayStation(shortStation(rows[0]))) : ''}</span>
       <span class="area-people">${rows.map((r) => `<sp-action-button size="${nameSize}" class="chip-link" data-name="${escapeHtml(r.staff_name)}">${escapeHtml(r.staff_name)}</sp-action-button>`).join('')}</span>
     </li>`;
   };
@@ -278,7 +278,7 @@ export function renderWhosOnNow(container, data, dayName, slotIdx, onSelectPerso
       const ordered = [...stations].sort(([, a], [, b]) => Number(a[0].is_floater) - Number(b[0].is_floater));
       const people = new Set(ordered.flatMap(([, rows]) => rows.map((r) => r.staff_name))).size;
       return `<sp-accordion-item class="area" data-area="${escapeHtml(area)}" label="${escapeHtml(area)} · ${people} on"${openAreas.has(area) ? ' open' : ''}>
-        <ul class="area-list">${ordered.map(([s, rows]) => rowFor(s, rows)).join('')}</ul>
+        <ul class="area-list${ordered.some(([s]) => !s) ? ' area-list-plain' : ''}">${ordered.map(([s, rows]) => rowFor(s, rows)).join('')}</ul>
       </sp-accordion-item>`;
     }).join('')
     : areaList.map(({ stations }) => `<div class="stations-grid">${stations.map(([s, rows]) => cardFor(s, rows)).join('')}</div>`).join('');

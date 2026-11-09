@@ -191,6 +191,13 @@ body {
 .area-people { display: flex; flex-wrap: wrap; gap: var(--space-100); min-width: 0; }
 .area-people sp-action-button { max-width: 100%; }
 @media (min-width: 900px) { .area-station { width: 160px; font-size: var(--spectrum-font-size-100); color: var(--text); } }
+/* Phones, areas with an unlabeled names row: label above names so names get the
+   full width and every row starts at the same edge. */
+@media (max-width: 899px) {
+  .area-list-plain .area-row { flex-direction: column; align-items: flex-start; gap: var(--space-100); }
+  .area-list-plain .area-station { width: auto; }
+  .area-list-plain .area-station:empty { display: none; }
+}
 
 .stations-grid {
   display: grid;
